@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useSurveyData } from "@/hooks/useSurveyData";
+import { useAuth } from "@/contexts/AuthContext";
 import { questions, sections } from "@/data/mockData";
 import { exportCompanyReport, exportComparisonReport, exportRawData } from "@/lib/exportUtils";
 import { exportCompanyPDF, exportComparisonPDF } from "@/lib/pdfExport";
