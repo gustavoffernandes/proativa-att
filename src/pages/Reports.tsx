@@ -275,21 +275,23 @@ export default function Reports() {
           )}
         </div>
 
-        {/* Relatório Comparativo */}
-        <div className="rounded-xl border border-border bg-card p-5 shadow-card">
-          <h3 className="text-sm font-semibold text-card-foreground mb-4 flex items-center gap-2"><GitCompareArrows className="h-4 w-4 text-primary" /> Relatório Comparativo</h3>
-          <div className="flex flex-wrap items-center gap-3 mb-3">{companies.map(c => <button key={c.id} onClick={() => toggleCompare(c.id)} className={cn("flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-all", effectiveCompareIds.includes(c.id) ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/50")}>{c.name}</button>)}</div>
-          <div className="flex flex-wrap items-center gap-3 mb-4">
-            <select value={compareSector} onChange={e => setCompareSector(e.target.value)} className="rounded-lg border border-border bg-background px-3 py-2 text-sm w-full sm:w-auto">
-              <option value="">Todos os setores</option>
-              {allSectors.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
+        {/* Relatório Comparativo - hide for company_user */}
+        {!isCompanyUser && (
+          <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+            <h3 className="text-sm font-semibold text-card-foreground mb-4 flex items-center gap-2"><GitCompareArrows className="h-4 w-4 text-primary" /> Relatório Comparativo</h3>
+            <div className="flex flex-wrap items-center gap-3 mb-3">{companies.map(c => <button key={c.id} onClick={() => toggleCompare(c.id)} className={cn("flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-all", effectiveCompareIds.includes(c.id) ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/50")}>{c.name}</button>)}</div>
+            <div className="flex flex-wrap items-center gap-3 mb-4">
+              <select value={compareSector} onChange={e => setCompareSector(e.target.value)} className="rounded-lg border border-border bg-background px-3 py-2 text-sm w-full sm:w-auto">
+                <option value="">Todos os setores</option>
+                {allSectors.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            {effectiveCompareIds.length >= 2 && <div className="flex flex-wrap gap-2">
+              <button onClick={() => handleExport("PDF Comparativo", () => exportComparisonPDF(effectiveCompareIds, exportData, compareSector || undefined))} className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"><FileDown className="h-4 w-4" /> PDF Comparativo</button>
+              <button onClick={() => handleExport("CSV Comparativo", () => exportComparisonReport(effectiveCompareIds, exportData))} className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"><Download className="h-4 w-4" /> CSV Comparativo</button>
+            </div>}
           </div>
-          {effectiveCompareIds.length >= 2 && <div className="flex flex-wrap gap-2">
-            <button onClick={() => handleExport("PDF Comparativo", () => exportComparisonPDF(effectiveCompareIds, exportData, compareSector || undefined))} className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"><FileDown className="h-4 w-4" /> PDF Comparativo</button>
-            <button onClick={() => handleExport("CSV Comparativo", () => exportComparisonReport(effectiveCompareIds, exportData))} className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"><Download className="h-4 w-4" /> CSV Comparativo</button>
-          </div>}
-        </div>
+        )}
 
         {/* Dados Brutos */}
         <div className="rounded-xl border border-border bg-card p-5 shadow-card">
