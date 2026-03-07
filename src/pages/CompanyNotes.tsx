@@ -20,7 +20,7 @@ interface CompanyNote {
 
 export default function CompanyNotes() {
   const { isLoading: surveyLoading, hasData, companies } = useSurveyData();
-  const { user } = useAuth();
+  const { user, isCompanyUser } = useAuth();
   const queryClient = useQueryClient();
   const [selectedCompany, setSelectedCompany] = useState<string>("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -30,7 +30,8 @@ export default function CompanyNotes() {
   const [newContent, setNewContent] = useState("");
   const [showNew, setShowNew] = useState(false);
 
-  const effectiveCompany = selectedCompany || companies[0]?.id || "";
+  // For company_user, auto-select their company
+  const effectiveCompany = isCompanyUser && companies.length === 1 ? companies[0].id : (selectedCompany || companies[0]?.id || "");
 
   const { data: notes = [], isLoading: notesLoading } = useQuery({
     queryKey: ["company-notes", effectiveCompany],
@@ -96,9 +97,11 @@ export default function CompanyNotes() {
         <div><h1 className="text-2xl font-bold text-foreground">Bloco de Notas</h1><p className="text-sm text-muted-foreground mt-1">Anotações por empresa</p></div>
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          <select value={effectiveCompany} onChange={e => setSelectedCompany(e.target.value)} className="rounded-lg border border-border bg-card px-3 py-2 text-sm w-full sm:w-auto">
-            {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
+          {!isCompanyUser && (
+            <select value={effectiveCompany} onChange={e => setSelectedCompany(e.target.value)} className="rounded-lg border border-border bg-card px-3 py-2 text-sm w-full sm:w-auto">
+              {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          )}
           <button onClick={() => setShowNew(true)} className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">
             <Plus className="h-4 w-4" /> Nova Nota
           </button>

@@ -4,10 +4,12 @@ import { HeatmapTable } from "@/components/dashboard/HeatmapTable";
 import { MultiSelectCompanies } from "@/components/dashboard/MultiSelectCompanies";
 import { DateRangeFilter } from "@/components/dashboard/DateRangeFilter";
 import { useSurveyData } from "@/hooks/useSurveyData";
+import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 
 export default function Heatmap() {
+  const { isCompanyUser } = useAuth();
   const [activeSection, setActiveSection] = useState("contexto");
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
   const [startDate, setStartDate] = useState<Date | undefined>();
@@ -53,7 +55,7 @@ export default function Heatmap() {
               </button>
             ))}
           </div>
-          <MultiSelectCompanies companies={companies} selected={selectedCompanies} onChange={setSelectedCompanies} />
+          {!isCompanyUser && <MultiSelectCompanies companies={companies} selected={selectedCompanies} onChange={setSelectedCompanies} />}
           <DateRangeFilter startDate={startDate} endDate={endDate} onStartChange={setStartDate} onEndChange={setEndDate} />
         </div>
         <HeatmapTable sectionId={activeSection} companies={effectiveCompanies} getQuestionAverage={customGetQuestionAverage} getAvailableQuestions={getAvailableQuestions} />

@@ -3,6 +3,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { DateRangeFilter } from "@/components/dashboard/DateRangeFilter";
 import { sections, questions } from "@/data/mockData";
 import { useSurveyData } from "@/hooks/useSurveyData";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -12,6 +13,7 @@ import { Loader2 } from "lucide-react";
 const COLORS = ["hsl(217, 71%, 45%)", "hsl(170, 60%, 45%)", "hsl(38, 92%, 55%)", "hsl(280, 60%, 55%)", "hsl(0, 72%, 55%)", "hsl(200, 80%, 50%)"];
 
 export default function Demographics() {
+  const { isCompanyUser } = useAuth();
   const [companyFilter, setCompanyFilter] = useState<string>("");
   const [sectorFilter, setSectorFilter] = useState<string>("");
   const [sectionFilter, setSectionFilter] = useState("contexto");
@@ -23,6 +25,9 @@ export default function Demographics() {
   if (isLoading) return <DashboardLayout><div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></DashboardLayout>;
   if (!hasData) return <DashboardLayout><div className="flex flex-col items-center justify-center h-64 text-center"><p className="text-sm text-muted-foreground">Nenhum dado disponível.</p></div></DashboardLayout>;
 
+  // For company_user, auto-select their company
+  const effectiveCompanyFilter = isCompanyUser && companies.length === 1 ? companies[0].id : companyFilter;
+
   const dateFiltered = respondents.filter(r => {
     if (!startDate && !endDate) return true;
     if (!r.responseTimestamp) return false;
@@ -31,7 +36,7 @@ export default function Demographics() {
     if (endDate) { const end = new Date(endDate); end.setHours(23, 59, 59, 999); if (ts > end) return false; }
     return true;
   });
-  const companyPool = companyFilter ? dateFiltered.filter(r => r.companyId === companyFilter) : dateFiltered;
+  const companyPool = effectiveCompanyFilter ? dateFiltered.filter(r => r.companyId === effectiveCompanyFilter) : dateFiltered;
   const availableSectors = [...new Set(companyPool.map(r => r.sector))].sort();
   const pool = sectorFilter ? companyPool.filter(r => r.sector === sectorFilter) : companyPool;
 
@@ -64,7 +69,6 @@ export default function Demographics() {
     count: pool.filter(r => r.sector === s).length,
   }));
 
-  // Radar data for demographics
   const radarData = availableSections.map(s => ({
     subject: s.shortName,
     "Geral": groupAverage(pool, s.id),
@@ -79,11 +83,13 @@ export default function Demographics() {
           <p className="text-sm text-muted-foreground mt-1">Cruzamento entre dados demográficos e percepção</p>
         </div>
         <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 sm:gap-4">
-          <select value={companyFilter} onChange={(e) => { setCompanyFilter(e.target.value); setSectorFilter(""); }}
-            className="rounded-lg border border-border bg-card px-3 py-2 text-sm w-full sm:w-auto">
-            <option value="">Todas as empresas</option>
-            {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
+          {!isCompanyUser && (
+            <select value={companyFilter} onChange={(e) => { setCompanyFilter(e.target.value); setSectorFilter(""); }}
+              className="rounded-lg border border-border bg-card px-3 py-2 text-sm w-full sm:w-auto">
+              <option value="">Todas as empresas</option>
+              {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          )}
           <select value={sectorFilter} onChange={(e) => setSectorFilter(e.target.value)}
             className="rounded-lg border border-border bg-card px-3 py-2 text-sm w-full sm:w-auto">
             <option value="">Todos os setores</option>

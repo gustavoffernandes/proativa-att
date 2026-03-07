@@ -4,6 +4,7 @@ import { KPICard } from "@/components/dashboard/KPICard";
 import { DateRangeFilter } from "@/components/dashboard/DateRangeFilter";
 import { useSurveyData } from "@/hooks/useSurveyData";
 import { useActionPlans } from "@/hooks/useActionPlans";
+import { useAuth } from "@/contexts/AuthContext";
 import { questions } from "@/data/mockData";
 import {
   PROART_SCALES, ALL_FACTORS, classifyRisk, getRiskLabel, getRiskColor, getRiskBgColor,
@@ -21,6 +22,7 @@ import { Progress } from "@/components/ui/progress";
 const COLORS = ["hsl(217, 71%, 45%)", "hsl(170, 60%, 45%)", "hsl(38, 92%, 55%)", "hsl(280, 60%, 55%)", "hsl(0, 72%, 55%)"];
 
 export default function Index() {
+  const { isCompanyUser } = useAuth();
   const { isLoading, hasData, companies, respondents, getSectionAverage, getCompanyRespondents, getAvailableSections } = useSurveyData();
   const { plans, tasks, isLoading: loadingPlans } = useActionPlans();
   const availableSections = getAvailableSections();
@@ -39,7 +41,9 @@ export default function Index() {
         <div className="flex flex-col items-center justify-center h-64 text-center">
           <ClipboardCheck className="h-12 w-12 text-muted-foreground mb-4" />
           <h2 className="text-lg font-semibold text-foreground">Nenhum dado sincronizado</h2>
-          <p className="text-sm text-muted-foreground mt-1">Vá para <strong>Integrações</strong> para configurar e sincronizar dados.</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {isCompanyUser ? "Nenhum dado disponível para sua empresa." : "Vá para <strong>Integrações</strong> para configurar e sincronizar dados."}
+          </p>
         </div>
       </DashboardLayout>
     );
@@ -110,19 +114,23 @@ export default function Index() {
     return row;
   });
 
+  const subtitle = isCompanyUser && companies.length === 1
+    ? `Dados da empresa ${companies[0].name}`
+    : "Benchmark consolidado de todas as empresas";
+
   return (
     <DashboardLayout>
       <div className="animate-fade-in space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Visão Geral</h1>
-            <p className="text-sm text-muted-foreground mt-1">Benchmark consolidado de todas as empresas</p>
+            <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
           </div>
           <DateRangeFilter startDate={startDate} endDate={endDate} onStartChange={setStartDate} onEndChange={setEndDate} />
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <KPICard title="Empresas Ativas" value={totalCompanies} subtitle="configuradas" sparkData={[totalCompanies]} color="hsl(217, 71%, 45%)" />
+          {!isCompanyUser && <KPICard title="Empresas Ativas" value={totalCompanies} subtitle="configuradas" sparkData={[totalCompanies]} color="hsl(217, 71%, 45%)" />}
           <KPICard title="Total Respostas" value={totalRespondents} subtitle="respondentes" sparkData={[totalRespondents]} color="hsl(170, 60%, 45%)" />
           <KPICard title="Média Geral" value={overallAvg.toFixed(2)} subtitle="escala 1-5" sparkData={[overallAvg]} color="hsl(38, 92%, 55%)" />
           <KPICard title="Escalas PROART" value={availableSections.length} subtitle={`de 4 escalas`} sparkData={[availableSections.length]} color="hsl(280, 60%, 55%)" />
@@ -130,7 +138,7 @@ export default function Index() {
 
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
           <div className="rounded-xl border border-border bg-card p-5 shadow-card">
-            <h3 className="mb-4 text-sm font-semibold text-card-foreground">Benchmark por Pilar</h3>
+            <h3 className="mb-4 text-sm font-semibold text-card-foreground">{isCompanyUser ? "Resultado por Pilar" : "Benchmark por Pilar"}</h3>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={benchmarkData} barCategoryGap="20%">
@@ -164,7 +172,7 @@ export default function Index() {
         {/* Evolution Timeline */}
         {evolutionData.length > 1 && (
           <div className="rounded-xl border border-border bg-card p-5 shadow-card">
-            <h3 className="mb-4 text-sm font-semibold text-card-foreground">Evolução Temporal das Empresas</h3>
+            <h3 className="mb-4 text-sm font-semibold text-card-foreground">Evolução Temporal</h3>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={evolutionData}>
@@ -180,33 +188,36 @@ export default function Index() {
           </div>
         )}
 
-        <div className="rounded-xl border border-border bg-card p-5 shadow-card">
-          <h3 className="mb-4 text-sm font-semibold text-card-foreground">Ranking de Empresas</h3>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground">#</th>
-                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Empresa</th>
-                  <th className="px-4 py-3 text-center font-semibold text-muted-foreground">Respostas</th>
-                  {availableSections.map((s) => <th key={s.id} className="px-4 py-3 text-center font-semibold text-muted-foreground">{s.shortName}</th>)}
-                  <th className="px-4 py-3 text-center font-semibold text-muted-foreground">Média</th>
-                </tr>
-              </thead>
-              <tbody>
-                {companyRanking.map((c, i) => (
-                  <tr key={c.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                    <td className="px-4 py-3 font-bold text-muted-foreground">{i + 1}</td>
-                    <td className="px-4 py-3 font-semibold text-foreground">{c.name}</td>
-                    <td className="px-4 py-3 text-center text-muted-foreground">{c.respondentCount}</td>
-                    {availableSections.map((s) => <td key={s.id} className="px-4 py-3 text-center"><span className="font-medium">{getSectionAverage(s.id, c.id).toFixed(1)}</span></td>)}
-                    <td className="px-4 py-3 text-center"><span className="inline-flex items-center justify-center rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">{c.average.toFixed(2)}</span></td>
+        {/* Ranking - hide for company_user since they only see 1 company */}
+        {!isCompanyUser && (
+          <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+            <h3 className="mb-4 text-sm font-semibold text-card-foreground">Ranking de Empresas</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="px-4 py-3 text-left font-semibold text-muted-foreground">#</th>
+                    <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Empresa</th>
+                    <th className="px-4 py-3 text-center font-semibold text-muted-foreground">Respostas</th>
+                    {availableSections.map((s) => <th key={s.id} className="px-4 py-3 text-center font-semibold text-muted-foreground">{s.shortName}</th>)}
+                    <th className="px-4 py-3 text-center font-semibold text-muted-foreground">Média</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {companyRanking.map((c, i) => (
+                    <tr key={c.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                      <td className="px-4 py-3 font-bold text-muted-foreground">{i + 1}</td>
+                      <td className="px-4 py-3 font-semibold text-foreground">{c.name}</td>
+                      <td className="px-4 py-3 text-center text-muted-foreground">{c.respondentCount}</td>
+                      {availableSections.map((s) => <td key={s.id} className="px-4 py-3 text-center"><span className="font-medium">{getSectionAverage(s.id, c.id).toFixed(1)}</span></td>)}
+                      <td className="px-4 py-3 text-center"><span className="inline-flex items-center justify-center rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">{c.average.toFixed(2)}</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Action Plan Progress */}
         {plans.length > 0 && (

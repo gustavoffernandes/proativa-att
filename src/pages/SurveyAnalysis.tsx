@@ -2,6 +2,7 @@ import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { QuestionChart } from "@/components/dashboard/QuestionChart";
 import { useSurveyData } from "@/hooks/useSurveyData";
+import { useAuth } from "@/contexts/AuthContext";
 import { questions } from "@/data/mockData";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
@@ -13,6 +14,7 @@ import {
 const COLORS = ["hsl(217, 71%, 45%)", "hsl(170, 60%, 45%)", "hsl(38, 92%, 55%)", "hsl(280, 60%, 55%)", "hsl(0, 72%, 55%)"];
 
 export default function SurveyAnalysis() {
+  const { isCompanyUser } = useAuth();
   const [activeSection, setActiveSection] = useState("contexto");
   const [selectedCompany, setSelectedCompany] = useState<string | undefined>(undefined);
   const [sectorFilter, setSectorFilter] = useState<string>("");
@@ -22,12 +24,13 @@ export default function SurveyAnalysis() {
   const availableQuestions = getAvailableQuestions();
   const sectionQuestions = availableQuestions.filter((q) => q.section === activeSection);
 
-  // Sectors for selected company
-  const companyRespondents = selectedCompany ? respondents.filter(r => r.companyId === selectedCompany) : respondents;
+  // For company_user, auto-select their company
+  const effectiveCompany = isCompanyUser && companies.length === 1 ? companies[0].id : selectedCompany;
+
+  const companyRespondents = effectiveCompany ? respondents.filter(r => r.companyId === effectiveCompany) : respondents;
   const availableSectors = [...new Set(companyRespondents.map(r => r.sector))].sort();
   const filteredRespondents = sectorFilter ? companyRespondents.filter(r => r.sector === sectorFilter) : companyRespondents;
 
-  // Custom distribution based on sector filter
   const customDistribution = (questionId: string) => {
     const pool = filteredRespondents.filter(r => r.answers[questionId] !== undefined);
     return [1, 2, 3, 4, 5].map(value => {
@@ -36,7 +39,6 @@ export default function SurveyAnalysis() {
     });
   };
 
-  // Radar data for section averages
   const radarData = availableSections.map(s => {
     const qs = questions.filter(q => q.section === s.id);
     const qsWithData = qs.filter(q => filteredRespondents.some(r => r.answers[q.id] !== undefined));
@@ -49,7 +51,7 @@ export default function SurveyAnalysis() {
   });
 
   if (isLoading) return <DashboardLayout><div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></DashboardLayout>;
-  if (!hasData) return <DashboardLayout><div className="flex flex-col items-center justify-center h-64 text-center"><p className="text-sm text-muted-foreground">Nenhum dado disponível. <a href="/integracoes" className="text-primary underline">Sincronize dados</a> primeiro.</p></div></DashboardLayout>;
+  if (!hasData) return <DashboardLayout><div className="flex flex-col items-center justify-center h-64 text-center"><p className="text-sm text-muted-foreground">Nenhum dado disponível. {!isCompanyUser && <a href="/integracoes" className="text-primary underline">Sincronize dados</a>} primeiro.</p></div></DashboardLayout>;
 
   return (
     <DashboardLayout>
@@ -68,11 +70,13 @@ export default function SurveyAnalysis() {
               </button>
             ))}
           </div>
-          <select value={selectedCompany || ""} onChange={(e) => { setSelectedCompany(e.target.value || undefined); setSectorFilter(""); }}
-            className="rounded-lg border border-border bg-card px-3 py-2 text-sm w-full sm:w-auto">
-            <option value="">Todas as empresas</option>
-            {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
+          {!isCompanyUser && (
+            <select value={selectedCompany || ""} onChange={(e) => { setSelectedCompany(e.target.value || undefined); setSectorFilter(""); }}
+              className="rounded-lg border border-border bg-card px-3 py-2 text-sm w-full sm:w-auto">
+              <option value="">Todas as empresas</option>
+              {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          )}
           <select value={sectorFilter} onChange={(e) => setSectorFilter(e.target.value)}
             className="rounded-lg border border-border bg-card px-3 py-2 text-sm w-full sm:w-auto">
             <option value="">Todos os setores</option>
@@ -80,7 +84,6 @@ export default function SurveyAnalysis() {
           </select>
         </div>
 
-        {/* Radar overview */}
         <div className="rounded-xl border border-border bg-card p-5 shadow-card">
           <h3 className="mb-3 text-sm font-semibold text-card-foreground">Radar Geral</h3>
           <div className="h-[250px]">
@@ -97,7 +100,7 @@ export default function SurveyAnalysis() {
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {sectionQuestions.map((q) => (
-            <QuestionChart key={q.id} questionId={q.id} questionText={`${q.number}. ${q.text}`} companyId={selectedCompany} getAnswerDistribution={sectorFilter ? customDistribution : getAnswerDistribution} />
+            <QuestionChart key={q.id} questionId={q.id} questionText={`${q.number}. ${q.text}`} companyId={effectiveCompany} getAnswerDistribution={sectorFilter ? customDistribution : getAnswerDistribution} />
           ))}
         </div>
         {sectionQuestions.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">Nenhuma pergunta com dados nesta seção.</p>}
