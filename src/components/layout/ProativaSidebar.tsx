@@ -1,7 +1,7 @@
 import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, BarChart3, Building2, Users, FileText, Download,
-  Settings, ChevronLeft, ChevronRight, Shield, Link2, X, LogOut, StickyNote, ClipboardList
+  Settings, ChevronLeft, ChevronRight, Shield, Link2, X, LogOut, StickyNote, ClipboardList, TrendingUp
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,9 +12,10 @@ const menuItems = [
   { path: "/empresas", label: "Comparação Empresas", icon: Building2, adminOnly: false, hideForCompanyUser: true },
   { path: "/demografico", label: "Perfil Demográfico", icon: Users, adminOnly: false, hideForCompanyUser: false },
   { path: "/heatmap", label: "Heatmap Satisfação", icon: FileText, adminOnly: false, hideForCompanyUser: false },
+  { path: "/evolucao", label: "Evolução Temporal", icon: TrendingUp, adminOnly: false, hideForCompanyUser: false },
   { path: "/relatorios", label: "Relatórios", icon: Download, adminOnly: false, hideForCompanyUser: false },
   { path: "/plano-acao", label: "Plano de Ação", icon: ClipboardList, adminOnly: false, hideForCompanyUser: false },
-  { path: "/notas", label: "Bloco de Notas", icon: StickyNote, adminOnly: false, hideForCompanyUser: false },
+  { path: "/notas", label: "Bloco de Notas", icon: StickyNote, adminOnly: false, hideForCompanyUser: true },
   { path: "/integracoes", label: "Integrações", icon: Link2, adminOnly: true, hideForCompanyUser: false },
 ];
 
@@ -61,7 +62,6 @@ export function ProativaSidebar({ collapsed, setCollapsed, mobileOpen, setMobile
           collapsed ? "md:w-[72px]" : "md:w-[260px]"
         )}
       >
-        {/* Logo */}
         <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-4">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary">
@@ -74,36 +74,20 @@ export function ProativaSidebar({ collapsed, setCollapsed, mobileOpen, setMobile
               </div>
             )}
           </div>
-          <button
-            className="md:hidden rounded-lg p-1 text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
-            onClick={() => setMobileOpen(false)}
-          >
+          <button className="md:hidden rounded-lg p-1 text-sidebar-foreground hover:bg-sidebar-accent transition-colors" onClick={() => setMobileOpen(false)}>
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Navigation */}
         <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4 scrollbar-thin">
-          <p className={cn("mb-2 px-3 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40", collapsed && !mobileOpen && "hidden")}>
-            Menu
-          </p>
+          <p className={cn("mb-2 px-3 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40", collapsed && !mobileOpen && "hidden")}>Menu</p>
           {visibleMenuItems.map((item) => {
             const isActive = location.pathname === item.path;
             return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                onClick={handleNavClick}
-                className={cn(
-                  "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
-                  isActive
-                    ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                )}
-              >
-                {isActive && (
-                  <div className="absolute -left-3 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-sidebar-ring" />
-                )}
+              <NavLink key={item.path} to={item.path} onClick={handleNavClick}
+                className={cn("group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
+                  isActive ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md" : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground")}>
+                {isActive && <div className="absolute -left-3 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-sidebar-ring" />}
                 <item.icon className="h-[18px] w-[18px] shrink-0" />
                 {(!collapsed || mobileOpen) && <span className="animate-fade-in">{item.label}</span>}
               </NavLink>
@@ -111,7 +95,6 @@ export function ProativaSidebar({ collapsed, setCollapsed, mobileOpen, setMobile
           })}
         </nav>
 
-        {/* Bottom */}
         <div className="border-t border-sidebar-border px-3 py-3 space-y-1">
           {(!collapsed || mobileOpen) && user && (
             <div className="mb-2 px-3 py-2 rounded-lg bg-sidebar-accent/50">
@@ -119,27 +102,17 @@ export function ProativaSidebar({ collapsed, setCollapsed, mobileOpen, setMobile
             </div>
           )}
           {bottomItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              onClick={handleNavClick}
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-            >
+            <NavLink key={item.path} to={item.path} onClick={handleNavClick}
+              className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors">
               <item.icon className="h-[18px] w-[18px] shrink-0" />
               {(!collapsed || mobileOpen) && <span>{item.label}</span>}
             </NavLink>
           ))}
-          <button
-            onClick={() => signOut()}
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
-          >
+          <button onClick={() => signOut()} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors">
             <LogOut className="h-[18px] w-[18px] shrink-0" />
             {(!collapsed || mobileOpen) && <span>Sair</span>}
           </button>
-          <button
-            onClick={() => setCollapsed(!collapsed)}
-            className="hidden md:flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
-          >
+          <button onClick={() => setCollapsed(!collapsed)} className="hidden md:flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
             {collapsed ? <ChevronRight className="h-[18px] w-[18px]" /> : <ChevronLeft className="h-[18px] w-[18px]" />}
             {!collapsed && <span>Recolher</span>}
           </button>
