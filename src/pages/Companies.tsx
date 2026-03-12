@@ -107,8 +107,8 @@ export default function Companies() {
 
   const deleteCompany = useMutation({
     mutationFn: async (cnpj: string) => {
-      const { error } = await supabase
-        .from("google_forms_config")
+      const { error } = await (supabase
+        .from("google_forms_config") as any)
         .delete()
         .eq("cnpj", cnpj);
       if (error) throw error;
