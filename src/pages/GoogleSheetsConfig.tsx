@@ -80,7 +80,12 @@ export default function GoogleSheetsConfig() {
   });
 
   const deleteConfig = useMutation({
-    mutationFn: async (id: string) => { const { error } = await supabase.from("google_forms_config").delete().eq("id", id); if (error) throw error; },
+    mutationFn: async (id: string) => {
+      // First delete any user_roles referencing this config to avoid constraint violations
+      await (supabase.from("user_roles") as any).delete().eq("company_id", id);
+      const { error } = await supabase.from("google_forms_config").delete().eq("id", id);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["google-forms-config"] });
       queryClient.invalidateQueries({ queryKey: ["google-forms-config-all"] });

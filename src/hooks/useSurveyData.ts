@@ -148,8 +148,8 @@ export function useSurveyData() {
   const companies: RealCompany[] = filteredConfigs.map((c, i) => ({
     id: c.id,
     name: c.company_name,
-    sector: "—",
-    employees: filteredRawResponses.filter(r => r.config_id === c.id).length,
+    sector: (c as any).sector || "Nao informado",
+    employees: (c as any).employee_count || filteredRawResponses.filter(r => r.config_id === c.id).length,
     color: COMPANY_COLORS[i % COMPANY_COLORS.length],
   }));
 

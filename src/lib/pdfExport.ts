@@ -29,6 +29,11 @@ const COLORS = {
   lightBg: [241, 245, 249] as [number, number, number],
 };
 
+// Remove diacritics/accents for safe PDF rendering with helvetica
+function removeDiacritics(str: string): string {
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
 const PAGE_WIDTH = 210;
 const MARGIN = 14;
 const CONTENT_WIDTH = PAGE_WIDTH - MARGIN * 2;
@@ -104,13 +109,13 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData) {
   const availableQuestions = data.getAvailableQuestions();
   const pageNum = { value: 1 };
 
-  addHeader(doc, company.name, "Relatório PROART - Avaliação de Riscos Psicossociais");
+  addHeader(doc, company.name, "Relatorio PROART - Avaliacao de Riscos Psicossociais");
   addFooter(doc, pageNum.value);
 
   let y = 48;
 
   // ==================== 1. COMPANY INFO ====================
-  y = addSectionTitle(doc, "1. Informações da Avaliação", y);
+  y = addSectionTitle(doc, "1. Informacoes da Avaliacao", y);
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
@@ -118,11 +123,11 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData) {
 
   const infoData = [
     ["Empresa", company.name],
-    ["Setor", company.sector],
-    ["Nº de Funcionários", String(company.employees)],
-    ["Questionários Preenchidos", String(pool.length)],
+    ["Setor", company.sector || "Nao informado"],
+    ["No de Funcionarios", String(company.employees || "N/A")],
+    ["Questionarios Preenchidos", String(pool.length)],
     ["Taxa de Resposta", `${company.employees > 0 ? Math.round((pool.length / company.employees) * 100) : 0}%`],
-    ["Data do Relatório", new Date().toLocaleDateString("pt-BR")],
+    ["Data do Relatorio", new Date().toLocaleDateString("pt-BR")],
   ];
 
   autoTable(doc, {
@@ -156,7 +161,7 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData) {
   const demoData = Object.entries(sexGroups).map(([sex, count]) => [sex, String(count), `${Math.round((count / pool.length) * 100)}%`]);
   autoTable(doc, {
     startY: y,
-    head: [["Gênero", "Quantidade", "Percentual"]],
+    head: [["Genero", "Quantidade", "Percentual"]],
     body: demoData,
     theme: "grid",
     headStyles: { fillColor: COLORS.primary, textColor: COLORS.white, fontSize: 8, fontStyle: "bold" },
@@ -196,9 +201,9 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData) {
     doc.setFontSize(9);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...COLORS.text);
-    doc.text(`${scale.shortName} – ${scale.name}`, MARGIN + 6, y);
+    doc.text(removeDiacritics(`${scale.shortName} - ${scale.name}`), MARGIN + 6, y);
     doc.setTextColor(...scaleCls.color);
-    doc.text(`${scaleAvg.toFixed(2)} - ${scaleCls.label}`, 140, y);
+    doc.text(`${scaleAvg.toFixed(2)} - ${removeDiacritics(scaleCls.label)}`, 140, y);
     doc.setTextColor(...COLORS.text);
     y += 7;
 
@@ -239,7 +244,7 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData) {
     scaleFactors.forEach(f => {
       doc.setTextColor(...f.cls.color);
       doc.setFontSize(8);
-      doc.text(`  • ${f.factor.name}: ${f.avg.toFixed(2)} — ${f.cls.label}`, MARGIN + 6, y);
+      doc.text(removeDiacritics(`  - ${f.factor.name}: ${f.avg.toFixed(2)} - ${f.cls.label}`), MARGIN + 6, y);
       doc.setTextColor(...COLORS.text);
       y += 4;
     });
@@ -251,8 +256,8 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData) {
 
   autoTable(doc, {
     startY: y,
-    head: [["Escala", "Fator", "Tipo", "Média", "Classificação"]],
-    body: factorData.map(f => [f.scaleName, f.factor.name, f.factor.type === "positive" ? "Positiva" : "Negativa", f.avg.toFixed(2), f.cls.label]),
+    head: [["Escala", "Fator", "Tipo", "Media", "Classificacao"]],
+    body: factorData.map(f => [f.scaleName, removeDiacritics(f.factor.name), f.factor.type === "positive" ? "Positiva" : "Negativa", f.avg.toFixed(2), removeDiacritics(f.cls.label)]),
     theme: "grid",
     headStyles: { fillColor: COLORS.primary, textColor: COLORS.white, fontSize: 7, fontStyle: "bold" },
     bodyStyles: { fontSize: 7, textColor: COLORS.text },
@@ -272,11 +277,11 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData) {
   // ==================== 3. P×S MATRIX ====================
   doc.addPage();
   pageNum.value++;
-  addHeader(doc, company.name, "Cálculo do Risco P×S");
+  addHeader(doc, company.name, "Calculo do Risco PxS");
   addFooter(doc, pageNum.value);
 
   let py = 48;
-  py = addSectionTitle(doc, "3. Cálculo do Risco e Matriz P×S (SESI 2022)", py);
+  py = addSectionTitle(doc, "3. Calculo do Risco e Matriz PxS (SESI 2022)", py);
 
   const eotAvg = factorData.filter(f => f.scaleName === "EOT").reduce((a, f) => a + f.avg, 0) / Math.max(1, factorData.filter(f => f.scaleName === "EOT").length);
   const colAvg = factorData.find(f => f.factor.name.includes("Coletivista"))?.avg || 0;
@@ -297,7 +302,7 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData) {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(...COLORS.text);
-  doc.text("RISCO = PROBABILIDADE (P) × SEVERIDADE (S)", MARGIN, py); py += 8;
+  doc.text("RISCO = PROBABILIDADE (P) x SEVERIDADE (S)", MARGIN, py); py += 8;
 
   // Variables table
   autoTable(doc, {
@@ -321,7 +326,7 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData) {
   // P×S Matrix table
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
-  doc.text("Matriz de Classificação dos Riscos:", MARGIN, py); py += 4;
+  doc.text("Matriz de Classificacao dos Riscos:", MARGIN, py); py += 4;
 
   autoTable(doc, {
     startY: py,
@@ -363,13 +368,13 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData) {
   // Risk levels legend
   autoTable(doc, {
     startY: py,
-    head: [["Nível", "Classificação", "Faixa de Risco", "Conduta"]],
+    head: [["Nivel", "Classificacao", "Faixa de Risco", "Conduta"]],
     body: [
-      ["Crítico", "PR1", "25", "Ações corretivas imediatas. Reavaliação após implementação."],
-      ["Alto", "PR2", "15-24", "Rotinas reavaliadas e novas medidas em até 30 dias."],
-      ["Moderado", "PR3", "10-14", "Rotinas monitoradas, novas medidas em até 90 dias."],
-      ["Baixo", "PR4", "6-9", "Manter controle, avaliar prevenção em 180 dias."],
-      ["Muito Baixo", "NA", "1-5", "Manter controle existente, reavaliação anual."],
+      ["Critico", "PR1", "25", "Acoes corretivas imediatas. Reavaliacao apos implementacao."],
+      ["Alto", "PR2", "15-24", "Rotinas reavaliadas e novas medidas em ate 30 dias."],
+      ["Moderado", "PR3", "10-14", "Rotinas monitoradas, novas medidas em ate 90 dias."],
+      ["Baixo", "PR4", "6-9", "Manter controle, avaliar prevencao em 180 dias."],
+      ["Muito Baixo", "NA", "1-5", "Manter controle existente, reavaliacao anual."],
     ],
     theme: "grid",
     headStyles: { fillColor: COLORS.primary, textColor: COLORS.white, fontSize: 7, fontStyle: "bold" },
@@ -381,71 +386,80 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData) {
   // ==================== 4. CONCLUSION ====================
   doc.addPage();
   pageNum.value++;
-  addHeader(doc, company.name, "Conclusão");
+  addHeader(doc, company.name, "Conclusao");
   addFooter(doc, pageNum.value);
 
   let cy = 48;
-  cy = addSectionTitle(doc, "4. Conclusão", cy);
+  cy = addSectionTitle(doc, "4. Conclusao", cy);
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(...COLORS.text);
 
-  const riskLabelMap: Record<string, string> = { "PR1": "CRÍTICO", "PR2": "ALTO", "PR3": "MODERADO", "PR4": "BAIXO", "NA": "MUITO BAIXO" };
+  const riskLabelMap: Record<string, string> = { "PR1": "CRITICO", "PR2": "ALTO", "PR3": "MODERADO", "PR4": "BAIXO", "NA": "MUITO BAIXO" };
 
   const wrapText = (text: string, maxWidth: number): string[] => {
     return doc.splitTextToSize(text, maxWidth);
   };
 
-  const conclusionLines = wrapText(
-    `A avaliação dos riscos psicossociais realizada através do Protocolo PROART (Protocolo de Avaliação dos Riscos Psicossociais no Trabalho), desenvolvido pelo Dr. Emílio Peres Facas da Universidade de Brasília, revelou que o ambiente de trabalho da empresa ${company.name} apresenta classificação de risco ${riskLabelMap[pxs.prLevel] || "MODERADO"} (${pxs.prLevel}), com índice P×S igual a ${pxs.risk}.`,
-    CONTENT_WIDTH
+  const conclusionText = removeDiacritics(
+    `A avaliacao dos riscos psicossociais realizada atraves do Protocolo PROART (Protocolo de Avaliacao dos Riscos Psicossociais no Trabalho), desenvolvido pelo Dr. Emilio Peres Facas da Universidade de Brasilia, revelou que o ambiente de trabalho da empresa ${company.name} apresenta classificacao de risco ${riskLabelMap[pxs.prLevel] || "MODERADO"} (${pxs.prLevel}), com indice PxS igual a ${pxs.risk}.`
   );
 
+  const conclusionLines = wrapText(conclusionText, CONTENT_WIDTH);
   conclusionLines.forEach((line: string) => {
     doc.text(line, MARGIN, cy); cy += 4.5;
   });
-  cy += 4;
+  cy += 6;
 
+  // Attention points as a structured table
   doc.setFont("helvetica", "bold");
-  doc.text("Principais pontos de atenção identificados:", MARGIN, cy); cy += 6;
-  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.text("Principais pontos de atencao identificados:", MARGIN, cy); cy += 6;
 
+  const attentionData: string[][] = [];
   PROART_SCALES.forEach(scale => {
     const scaleFactors = factorData.filter(f => f.factor.scaleId === scale.id);
     const scaleAvg = scaleFactors.length > 0 ? scaleFactors.reduce((a, f) => a + f.avg, 0) / scaleFactors.length : 0;
     const scaleType = scale.type === "positive" ? "positive" as const : "negative" as const;
     const cls = getClassification(scaleAvg, scaleType);
-
-    doc.setTextColor(...cls.color);
-    doc.text(`•`, MARGIN + 2, cy);
-    doc.setTextColor(...COLORS.text);
-    doc.setFont("helvetica", "bold");
-    doc.text(`${scale.name}:`, MARGIN + 6, cy);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(...cls.color);
-    doc.text(`${cls.label} (média ${scaleAvg.toFixed(2)})`, MARGIN + 6 + doc.getTextWidth(`${scale.name}: `), cy);
-    doc.setTextColor(...COLORS.text);
-    cy += 5;
-
-    // List risky factors
-    const riskyFactors = scaleFactors.filter(f => f.risk === "high" || f.risk === "medium");
-    riskyFactors.forEach(f => {
-      cy = checkPageBreak(doc, cy, 5, company.name, "Conclusão", pageNum);
-      doc.setFontSize(8);
-      doc.text(`    - ${f.factor.name}: ${f.avg.toFixed(2)} (${f.cls.label})`, MARGIN + 8, cy);
-      cy += 4;
+    
+    attentionData.push([removeDiacritics(scale.shortName), removeDiacritics(scale.name), scaleAvg.toFixed(2), removeDiacritics(cls.label)]);
+    
+    const riskyFactorsInScale = scaleFactors.filter(f => f.risk === "high" || f.risk === "medium");
+    riskyFactorsInScale.forEach(f => {
+      attentionData.push(["", `  - ${removeDiacritics(f.factor.name)}`, f.avg.toFixed(2), removeDiacritics(f.cls.label)]);
     });
-    doc.setFontSize(9);
   });
 
-  cy += 4;
-  cy = checkPageBreak(doc, cy, 15, company.name, "Conclusão", pageNum);
+  autoTable(doc, {
+    startY: cy,
+    head: [["Escala", "Descricao", "Media", "Classificacao"]],
+    body: attentionData,
+    theme: "grid",
+    headStyles: { fillColor: COLORS.primary, textColor: COLORS.white, fontSize: 8, fontStyle: "bold" },
+    bodyStyles: { fontSize: 8, textColor: COLORS.text },
+    columnStyles: { 0: { cellWidth: 18, fontStyle: "bold" }, 2: { cellWidth: 18, halign: "center" }, 3: { cellWidth: 30 } },
+    alternateRowStyles: { fillColor: COLORS.bg },
+    margin: { left: MARGIN, right: MARGIN },
+    didParseCell: (data) => {
+      if (data.section === "body" && data.column.index === 3) {
+        const label = String(data.cell.raw);
+        if (label.includes("Alto")) data.cell.styles.textColor = COLORS.danger;
+        else if (label.includes("Medio")) data.cell.styles.textColor = COLORS.warning;
+        else data.cell.styles.textColor = COLORS.success;
+        data.cell.styles.fontStyle = "bold";
+      }
+    },
+  });
+  cy = (doc as any).lastAutoTable?.finalY + 8 || cy + 40;
 
-  const recLines = wrapText(
-    `Recomenda-se a implementação prioritária das ações propostas no Plano de Ação (seção 5), com reavaliação em ${pxs.deadlineDays === 0 ? "até 30 dias" : pxs.deadlineDays + " dias"} para acompanhamento da evolução dos indicadores. As intervenções devem priorizar os fatores classificados como Risco Alto.`,
-    CONTENT_WIDTH
+  cy = checkPageBreak(doc, cy, 20, company.name, "Conclusao", pageNum);
+
+  const recText = removeDiacritics(
+    `Recomenda-se a implementacao prioritaria das acoes propostas no Plano de Acao (secao 5), com reavaliacao em ${pxs.deadlineDays === 0 ? "ate 30 dias" : pxs.deadlineDays + " dias"} para acompanhamento da evolucao dos indicadores. As intervencoes devem priorizar os fatores classificados como Risco Alto.`
   );
+  const recLines = wrapText(recText, CONTENT_WIDTH);
   recLines.forEach((line: string) => {
     doc.text(line, MARGIN, cy); cy += 4.5;
   });
@@ -454,18 +468,18 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData) {
   // Uses the EXACT SAME logic as ActionPlans.tsx page
   doc.addPage();
   pageNum.value++;
-  addHeader(doc, company.name, "Plano de Ação");
+  addHeader(doc, company.name, "Plano de Acao");
   addFooter(doc, pageNum.value);
 
   let ay = 48;
-  ay = addSectionTitle(doc, "5. Plano de Ação Sugerido", ay);
+  ay = addSectionTitle(doc, "5. Plano de Acao Sugerido", ay);
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(...COLORS.text);
 
   const introLines = wrapText(
-    "Com base nos resultados obtidos e utilizando a mesma lógica de geração automática de planos da plataforma, recomenda-se a implementação das seguintes ações para os fatores identificados com risco médio ou alto:",
+    "Com base nos resultados obtidos e utilizando a mesma logica de geracao automatica de planos da plataforma, recomenda-se a implementacao das seguintes acoes para os fatores identificados com risco medio ou alto:",
     CONTENT_WIDTH
   );
   introLines.forEach((line: string) => {
@@ -478,14 +492,14 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData) {
 
   if (riskyFactors.length === 0) {
     doc.setFont("helvetica", "italic");
-    doc.text("Nenhum fator com risco médio ou alto identificado. Manter controles existentes.", MARGIN, ay);
+    doc.text("Nenhum fator com risco medio ou alto identificado. Manter controles existentes.", MARGIN, ay);
   } else {
     let planNum = 1;
     riskyFactors.forEach(f => {
       const suggested = getSuggestedActions(f.factor.id, f.risk);
       if (!suggested) return;
 
-      ay = checkPageBreak(doc, ay, 25, company.name, "Plano de Ação (cont.)", pageNum);
+      ay = checkPageBreak(doc, ay, 30, company.name, "Plano de Acao (cont.)", pageNum);
 
       // Plan header
       doc.setFillColor(...(f.risk === "high" ? COLORS.danger : COLORS.warning));
@@ -493,25 +507,32 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData) {
 
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
-      doc.text(`${planNum}. ${suggested.title}`, MARGIN + 6, ay);
+      doc.text(`${planNum}. ${removeDiacritics(suggested.title)}`, MARGIN + 6, ay);
       ay += 5;
 
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
       doc.setTextColor(...COLORS.muted);
-      doc.text(`Fator: ${f.factor.name} | Média: ${f.avg.toFixed(2)} | ${getRiskLabel(f.risk)} | Escala: ${f.scaleName}`, MARGIN + 6, ay);
+      doc.text(`Fator: ${removeDiacritics(f.factor.name)} | Media: ${f.avg.toFixed(2)} | ${removeDiacritics(getRiskLabel(f.risk))} | Escala: ${f.scaleName}`, MARGIN + 6, ay);
       doc.setTextColor(...COLORS.text);
-      ay += 5;
+      ay += 6;
 
-      // Tasks
-      suggested.tasks.forEach(task => {
-        ay = checkPageBreak(doc, ay, 5, company.name, "Plano de Ação (cont.)", pageNum);
-        doc.setFontSize(8);
-        doc.text(`  ☐ ${task}`, MARGIN + 8, ay);
-        ay += 4;
+      // Tasks as a clean table
+      const taskData = suggested.tasks.map((task, i) => [`${i + 1}`, removeDiacritics(task)]);
+      
+      autoTable(doc, {
+        startY: ay,
+        body: taskData,
+        theme: "plain",
+        bodyStyles: { fontSize: 7.5, textColor: COLORS.text, cellPadding: { top: 1.5, bottom: 1.5, left: 3, right: 3 } },
+        columnStyles: { 
+          0: { cellWidth: 8, halign: "center", fontStyle: "bold", textColor: COLORS.accent },
+          1: { cellWidth: CONTENT_WIDTH - 20 }
+        },
+        margin: { left: MARGIN + 8, right: MARGIN },
       });
+      ay = (doc as any).lastAutoTable?.finalY + 6 || ay + 20;
 
-      ay += 4;
       planNum++;
     });
   }
@@ -539,7 +560,7 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData) {
 
     autoTable(doc, {
       startY: 48,
-      head: [["Nº", "Pergunta", "Média", "Nunca", "Raramente", "Às vezes", "Frequente", "Sempre"]],
+      head: [["No", "Pergunta", "Media", "Nunca", "Raramente", "As vezes", "Frequente", "Sempre"]],
       body: tableData,
       theme: "grid",
       headStyles: { fillColor: COLORS.primary, textColor: COLORS.white, fontSize: 7, fontStyle: "bold" },
@@ -604,15 +625,15 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData) {
   doc.setFontSize(9);
   doc.setTextColor(...COLORS.text);
   doc.setFont("helvetica", "normal");
-  doc.text("Protocolo de Avaliação dos Riscos Psicossociais no Trabalho (PROART)", MARGIN, fy); fy += 5;
-  doc.text("Desenvolvido pelo Dr. Emílio Peres Facas - Universidade de Brasília (UnB)", MARGIN, fy); fy += 10;
+  doc.text("Protocolo de Avaliacao dos Riscos Psicossociais no Trabalho (PROART)", MARGIN, fy); fy += 5;
+  doc.text("Desenvolvido pelo Dr. Emilio Peres Facas - Universidade de Brasilia (UnB)", MARGIN, fy); fy += 10;
 
   doc.setTextColor(...COLORS.muted);
   doc.setFontSize(8);
   doc.text(`Relatório gerado automaticamente em ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`, MARGIN, fy); fy += 5;
   doc.text(`Empresa avaliada: ${company.name}`, MARGIN, fy); fy += 8;
-  doc.text("As interpretações e recomendações devem ser validadas por profissional habilitado em", MARGIN, fy); fy += 4;
-  doc.text("saúde e segurança do trabalho.", MARGIN, fy);
+  doc.text("As interpretacoes e recomendacoes devem ser validadas por profissional habilitado em", MARGIN, fy); fy += 4;
+  doc.text("saude e seguranca do trabalho.", MARGIN, fy);
 
   doc.save(`relatorio_PROART_${company.name.replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.pdf`);
 }
@@ -642,7 +663,7 @@ export function exportComparisonPDF(companyIds: string[], data: PDFExportData, s
 
   autoTable(doc, {
     startY: y,
-    head: [["Empresa", "Respostas", ...availableSections.map(s => s.shortName), "Média"]],
+    head: [["Empresa", "Respostas", ...availableSections.map(s => s.shortName), "Media"]],
     body: overviewData,
     theme: "grid",
     headStyles: { fillColor: COLORS.primary, textColor: COLORS.white, fontSize: 8, fontStyle: "bold" },
