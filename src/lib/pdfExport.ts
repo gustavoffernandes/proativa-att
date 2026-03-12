@@ -244,7 +244,7 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData) {
     scaleFactors.forEach(f => {
       doc.setTextColor(...f.cls.color);
       doc.setFontSize(8);
-      doc.text(`  • ${f.factor.name}: ${f.avg.toFixed(2)} — ${f.cls.label}`, MARGIN + 6, y);
+      doc.text(removeDiacritics(`  - ${f.factor.name}: ${f.avg.toFixed(2)} - ${f.cls.label}`), MARGIN + 6, y);
       doc.setTextColor(...COLORS.text);
       y += 4;
     });
