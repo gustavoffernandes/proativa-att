@@ -625,8 +625,8 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData) {
   doc.setFontSize(9);
   doc.setTextColor(...COLORS.text);
   doc.setFont("helvetica", "normal");
-  doc.text("Protocolo de Avaliação dos Riscos Psicossociais no Trabalho (PROART)", MARGIN, fy); fy += 5;
-  doc.text("Desenvolvido pelo Dr. Emílio Peres Facas - Universidade de Brasília (UnB)", MARGIN, fy); fy += 10;
+  doc.text("Protocolo de Avaliacao dos Riscos Psicossociais no Trabalho (PROART)", MARGIN, fy); fy += 5;
+  doc.text("Desenvolvido pelo Dr. Emilio Peres Facas - Universidade de Brasilia (UnB)", MARGIN, fy); fy += 10;
 
   doc.setTextColor(...COLORS.muted);
   doc.setFontSize(8);
