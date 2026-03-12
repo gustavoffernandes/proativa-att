@@ -326,7 +326,7 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData) {
   // P×S Matrix table
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
-  doc.text("Matriz de Classificação dos Riscos:", MARGIN, py); py += 4;
+  doc.text("Matriz de Classificacao dos Riscos:", MARGIN, py); py += 4;
 
   autoTable(doc, {
     startY: py,
