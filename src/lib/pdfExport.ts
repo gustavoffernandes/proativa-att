@@ -560,7 +560,7 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData) {
 
     autoTable(doc, {
       startY: 48,
-      head: [["Nº", "Pergunta", "Média", "Nunca", "Raramente", "Às vezes", "Frequente", "Sempre"]],
+      head: [["No", "Pergunta", "Media", "Nunca", "Raramente", "As vezes", "Frequente", "Sempre"]],
       body: tableData,
       theme: "grid",
       headStyles: { fillColor: COLORS.primary, textColor: COLORS.white, fontSize: 7, fontStyle: "bold" },
