@@ -91,9 +91,9 @@ export default function Companies() {
 
   const updateCompanyName = useMutation({
     mutationFn: async ({ cnpj, newName }: { cnpj: string; newName: string }) => {
-      const { error } = await supabase
-        .from("google_forms_config")
-        .update({ company_name: newName } as any)
+      const { error } = await (supabase
+        .from("google_forms_config") as any)
+        .update({ company_name: newName })
         .eq("cnpj", cnpj);
       if (error) throw error;
     },
