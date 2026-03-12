@@ -368,13 +368,13 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData) {
   // Risk levels legend
   autoTable(doc, {
     startY: py,
-    head: [["Nível", "Classificação", "Faixa de Risco", "Conduta"]],
+    head: [["Nivel", "Classificacao", "Faixa de Risco", "Conduta"]],
     body: [
-      ["Crítico", "PR1", "25", "Ações corretivas imediatas. Reavaliação após implementação."],
-      ["Alto", "PR2", "15-24", "Rotinas reavaliadas e novas medidas em até 30 dias."],
-      ["Moderado", "PR3", "10-14", "Rotinas monitoradas, novas medidas em até 90 dias."],
-      ["Baixo", "PR4", "6-9", "Manter controle, avaliar prevenção em 180 dias."],
-      ["Muito Baixo", "NA", "1-5", "Manter controle existente, reavaliação anual."],
+      ["Critico", "PR1", "25", "Acoes corretivas imediatas. Reavaliacao apos implementacao."],
+      ["Alto", "PR2", "15-24", "Rotinas reavaliadas e novas medidas em ate 30 dias."],
+      ["Moderado", "PR3", "10-14", "Rotinas monitoradas, novas medidas em ate 90 dias."],
+      ["Baixo", "PR4", "6-9", "Manter controle, avaliar prevencao em 180 dias."],
+      ["Muito Baixo", "NA", "1-5", "Manter controle existente, reavaliacao anual."],
     ],
     theme: "grid",
     headStyles: { fillColor: COLORS.primary, textColor: COLORS.white, fontSize: 7, fontStyle: "bold" },
