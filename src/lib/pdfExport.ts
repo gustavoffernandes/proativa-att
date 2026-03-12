@@ -29,6 +29,11 @@ const COLORS = {
   lightBg: [241, 245, 249] as [number, number, number],
 };
 
+// Remove diacritics/accents for safe PDF rendering with helvetica
+function removeDiacritics(str: string): string {
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
 const PAGE_WIDTH = 210;
 const MARGIN = 14;
 const CONTENT_WIDTH = PAGE_WIDTH - MARGIN * 2;
