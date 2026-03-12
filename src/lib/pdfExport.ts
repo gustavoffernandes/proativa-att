@@ -257,7 +257,7 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData) {
   autoTable(doc, {
     startY: y,
     head: [["Escala", "Fator", "Tipo", "Média", "Classificação"]],
-    body: factorData.map(f => [f.scaleName, f.factor.name, f.factor.type === "positive" ? "Positiva" : "Negativa", f.avg.toFixed(2), f.cls.label]),
+    body: factorData.map(f => [f.scaleName, removeDiacritics(f.factor.name), f.factor.type === "positive" ? "Positiva" : "Negativa", f.avg.toFixed(2), removeDiacritics(f.cls.label)]),
     theme: "grid",
     headStyles: { fillColor: COLORS.primary, textColor: COLORS.white, fontSize: 7, fontStyle: "bold" },
     bodyStyles: { fontSize: 7, textColor: COLORS.text },
