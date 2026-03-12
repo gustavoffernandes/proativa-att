@@ -386,7 +386,7 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData) {
   // ==================== 4. CONCLUSION ====================
   doc.addPage();
   pageNum.value++;
-  addHeader(doc, company.name, "Conclusão");
+  addHeader(doc, company.name, "Conclusao");
   addFooter(doc, pageNum.value);
 
   let cy = 48;
