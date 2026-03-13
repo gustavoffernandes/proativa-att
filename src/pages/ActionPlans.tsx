@@ -33,7 +33,9 @@ export default function ActionPlans() {
 
   const effectiveCompany = isCompanyUser && companies.length === 1 ? companies[0].id : (selectedCompany || companies[0]?.id || "");
   const company = companies.find(c => c.id === effectiveCompany);
-  const pool = getCompanyRespondents(effectiveCompany);
+  const companyForms = getFormConfigsForCompany(effectiveCompany);
+  let pool = getCompanyRespondents(effectiveCompany);
+  if (selectedFormId) pool = pool.filter(r => r.configId === selectedFormId);
   const availableSections = getAvailableSections();
   const companyPlans = plans.filter(p => p.company_config_id === effectiveCompany);
 
