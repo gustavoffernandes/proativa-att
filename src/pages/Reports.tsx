@@ -349,12 +349,12 @@ export default function Reports() {
           {sectorAvgs.length > 0 && (
             <div className="overflow-x-auto mb-5">
               <h4 className="text-xs font-semibold text-muted-foreground mb-2">Respostas por Setor</h4>
-              <table className="w-full text-sm"><thead><tr className="border-b border-border"><th className="px-4 py-2 text-left font-semibold text-muted-foreground">Setor</th><th className="px-4 py-2 text-center font-semibold text-muted-foreground">Resp.</th>{availableSections.map(s => <th key={s.id} className="px-4 py-2 text-center font-semibold text-muted-foreground">{s.shortName}</th>)}</tr></thead>
+              <table className="w-full text-sm"><thead><tr className="border-b border-border"><th className="px-4 py-2 text-left font-semibold text-muted-foreground">Setor</th><th className="px-4 py-2 text-center font-semibold text-muted-foreground">Resp.</th>{availableSectionsForPool.map(s => <th key={s.id} className="px-4 py-2 text-center font-semibold text-muted-foreground">{s.shortName}</th>)}</tr></thead>
                 <tbody>{sectorAvgs.map(sa => (
                   <tr key={sa.sector} className="border-b border-border/50">
                     <td className="px-4 py-2 font-medium text-foreground">{sa.sector}</td>
                     <td className="px-4 py-2 text-center text-muted-foreground">{sa.count}</td>
-                    {availableSections.map(s => {
+                    {availableSectionsForPool.map(s => {
                       const val = sa.sectionAvgs[s.id] || 0;
                       const scale = PROART_SCALES.find(sc => sc.id === s.id);
                       const scaleType = scale?.type === "positive" ? "positive" as const : "negative" as const;

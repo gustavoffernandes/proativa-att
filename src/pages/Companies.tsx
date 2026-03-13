@@ -115,13 +115,26 @@ export default function Companies() {
       if (sector !== undefined) updateData.sector = sector || null;
       if (employee_count !== undefined) updateData.employee_count = employee_count ? parseInt(employee_count) : null;
 
-      const { data, error } = await (supabase
-        .from("google_forms_config") as any)
-        .update(updateData)
-        .eq("cnpj", cnpj)
-        .select();
-      if (error) throw new Error(error.message || "Erro ao atualizar empresa");
-      if (!data || data.length === 0) throw new Error("Não foi possível atualizar. Verifique suas permissões.");
+      const targetConfigs = configs
+        .filter((c: any) => c.cnpj === cnpj)
+        .sort((a: any, b: any) => Number(a.spreadsheet_id === "__placeholder__") - Number(b.spreadsheet_id === "__placeholder__"));
+
+      const results = await Promise.all(
+        targetConfigs.map(async (config: any) => {
+          const { data, error } = await (supabase
+            .from("google_forms_config") as any)
+            .update(updateData)
+            .eq("id", config.id)
+            .select("id");
+          return { data, error };
+        }),
+      );
+
+      const successCount = results.filter((result) => !result.error && Array.isArray(result.data) && result.data.length > 0).length;
+      if (successCount === 0) {
+        const firstError = results.find((result) => result.error)?.error;
+        throw new Error(firstError?.message || "Não foi possível atualizar a empresa. Verifique as permissões desta conta.");
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["google-forms-config"] });
