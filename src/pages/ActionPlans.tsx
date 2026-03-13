@@ -189,53 +189,13 @@ export default function ActionPlans() {
           <p className="text-xs text-muted-foreground">{companyPlans.length} plano(s) de ação</p>
         )}
 
-        {/* Show suggested plans for company users when no plans exist yet */}
+        {/* Empty state for company user: wait for manager-generated plans */}
         {readOnly && companyPlans.length === 0 && (
-          <div className="space-y-4">
-            <div className="rounded-xl border border-border bg-card p-5 shadow-card">
-              <h3 className="text-sm font-semibold text-card-foreground mb-2 flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-warning" /> Planos de Ação Sugeridos
-              </h3>
-              <p className="text-xs text-muted-foreground mb-4">
-                Estes são os planos de ação sugeridos automaticamente com base no diagnóstico. Os planos ainda não foram formalmente gerados pelo gestor.
-              </p>
-              {(() => {
-                const riskyFactors = factorResults.filter(f => f.risk === "high" || f.risk === "medium");
-                if (riskyFactors.length === 0) {
-                  return <p className="text-sm text-muted-foreground">Nenhum fator com risco médio ou alto identificado. Não há planos de ação sugeridos.</p>;
-                }
-                return (
-                  <div className="space-y-3">
-                    {riskyFactors.map(factor => {
-                      const suggested = getSuggestedActions(factor.id, factor.risk);
-                      if (!suggested) return null;
-                      return (
-                        <div key={factor.id} className="rounded-lg border border-border bg-muted/20 p-4">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Target className="h-4 w-4 text-primary" />
-                            <h4 className="text-sm font-semibold text-foreground">{suggested.title}</h4>
-                            <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full ml-auto", getRiskBgColor(factor.risk), getRiskColor(factor.risk))}>
-                              {getRiskLabel(factor.risk)}
-                            </span>
-                          </div>
-                          <p className="text-xs text-muted-foreground mb-3">
-                            Fator: {factor.name} | Média: {factor.avg.toFixed(2)} | {PROART_SCALES.find(s => s.id === factor.scaleId)?.shortName}
-                          </p>
-                          <ul className="space-y-1.5">
-                            {suggested.tasks.map((task, idx) => (
-                              <li key={idx} className="flex items-start gap-2 text-xs text-foreground">
-                                <span className="mt-0.5 h-4 w-4 rounded border border-border shrink-0 flex items-center justify-center" />
-                                {task}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })()}
-            </div>
+          <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+            <h3 className="text-sm font-semibold text-card-foreground mb-2">Nenhum plano de ação disponível</h3>
+            <p className="text-sm text-muted-foreground">
+              Os planos de ação da sua empresa ainda não foram gerados pelo gestor.
+            </p>
           </div>
         )}
 
