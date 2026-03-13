@@ -155,7 +155,7 @@ export function useSurveyData() {
       cnpjToConfigIds.set(key, []);
       cnpjToCompanyInfo.set(key, {
         name: c.company_name,
-        sector: c.sector || "Nao informado",
+        sector: c.sector ? c.sector.charAt(0).toUpperCase() + c.sector.slice(1).toLowerCase() : "Não informado",
         employees: c.employee_count || null,
         cnpj: c.cnpj || "",
       });
