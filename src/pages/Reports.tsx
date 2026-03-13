@@ -33,7 +33,7 @@ function RiskBadge({ value, type }: { value: number; type: "positive" | "negativ
 export default function Reports() {
   const { isCompanyUser } = useAuth();
   const surveyData = useSurveyData();
-  const { isLoading, hasData, companies, respondents, getSectionAverage, getCompanyRespondents, getQuestionAverage, getAvailableSections, getAvailableQuestions, getAnswerDistribution, getOutlierResponses, getSectorAverages, getFormConfigsForCompany } = surveyData;
+  const { isLoading, hasData, companies, respondents, getSectionAverage, getCompanyRespondents, getQuestionAverage, getAvailableSections, getAvailableQuestions, getAnswerDistribution, getFormConfigsForCompany } = surveyData;
   const [selectedCompany, setSelectedCompany] = useState<string>("");
   const [selectedFormId, setSelectedFormId] = useState<string>("");
   
@@ -47,11 +47,69 @@ export default function Reports() {
   const effectiveCompany = selectedCompany || companies[0]?.id || "";
   const effectiveCompareIds = compareIds.length > 0 ? compareIds : companies.map(c => c.id);
   const companyForms = getFormConfigsForCompany(effectiveCompany);
-  let pool = getCompanyRespondents(effectiveCompany);
-  if (selectedFormId) pool = pool.filter((r: any) => r.configId === selectedFormId);
+
+  const getReportPoolByCompany = (companyId: string) => {
+    const companyPool = getCompanyRespondents(companyId);
+    if (!selectedFormId || companyId !== effectiveCompany) return companyPool;
+    return companyPool.filter((r) => r.configId === selectedFormId);
+  };
+
+  const pool = getReportPoolByCompany(effectiveCompany);
+
+  const getQuestionAverageFromPool = (questionId: string, targetPool: typeof pool): number => {
+    const withAnswer = targetPool.filter(r => r.answers[questionId] !== undefined);
+    if (withAnswer.length === 0) return 0;
+    const sum = withAnswer.reduce((acc, r) => acc + (r.answers[questionId] || 0), 0);
+    return Math.round((sum / withAnswer.length) * 100) / 100;
+  };
+
+  const getAnswerDistributionFromPool = (questionId: string, targetPool: typeof pool) => {
+    const withAnswer = targetPool.filter(r => r.answers[questionId] !== undefined);
+    return [1, 2, 3, 4, 5].map(value => {
+      const count = withAnswer.filter(r => r.answers[questionId] === value).length;
+      return {
+        value,
+        count,
+        percentage: withAnswer.length > 0 ? Math.round((count / withAnswer.length) * 100) : 0,
+      };
+    });
+  };
+
+  const getAvailableQuestionsFromPool = (targetPool: typeof pool) => {
+    const available = new Set<string>();
+    targetPool.forEach(r => Object.keys(r.answers).forEach(k => available.add(k)));
+    return questions.filter(q => available.has(q.id));
+  };
+
+  const availableQuestionsList = getAvailableQuestionsFromPool(pool);
+  const availableSectionsForPool = sections.filter(s => availableQuestionsList.some(q => q.section === s.id));
+
+  const getSectionAverageFromPool = (sectionId: string, targetPool: typeof pool): number => {
+    const sectionQuestions = questions.filter(q => q.section === sectionId);
+    if (sectionQuestions.length === 0 || targetPool.length === 0) return 0;
+
+    const questionsWithData = sectionQuestions.filter(q => targetPool.some(r => r.answers[q.id] !== undefined));
+    if (questionsWithData.length === 0) return 0;
+
+    const avg = questionsWithData.reduce((acc, q) => acc + getQuestionAverageFromPool(q.id, targetPool), 0) / questionsWithData.length;
+    return Math.round(avg * 100) / 100;
+  };
+
   const toggleCompare = (id: string) => { const current = effectiveCompareIds; setCompareIds(current.includes(id) ? current.filter(x => x !== id) : [...current, id]); };
 
   const exportData = { companies, sections: availableSections.length > 0 ? availableSections : sections, questions, respondents, getCompanyRespondents, getSectionAverage, getQuestionAverage, getAnswerDistribution, getAvailableSections, getAvailableQuestions };
+  const individualExportData = {
+    ...exportData,
+    sections: availableSectionsForPool.length > 0 ? availableSectionsForPool : sections,
+    respondents: selectedFormId ? respondents.filter(r => r.companyId !== effectiveCompany || r.configId === selectedFormId) : respondents,
+    getCompanyRespondents: (companyId: string) => getReportPoolByCompany(companyId),
+    getQuestionAverage: (questionId: string, companyId?: string) => getQuestionAverageFromPool(questionId, companyId ? getReportPoolByCompany(companyId) : pool),
+    getSectionAverage: (sectionId: string, companyId?: string) => getSectionAverageFromPool(sectionId, companyId ? getReportPoolByCompany(companyId) : pool),
+    getAnswerDistribution: (questionId: string, companyId?: string) => getAnswerDistributionFromPool(questionId, companyId ? getReportPoolByCompany(companyId) : pool),
+    getAvailableSections: () => availableSectionsForPool,
+    getAvailableQuestions: () => availableQuestionsList,
+  };
+
   const handleExport = (type: string, fn: () => void) => {
     try { fn(); toast({ title: "Relatório exportado!", description: `O arquivo ${type} foi baixado.` }); }
     catch (e) { toast({ title: "Erro", description: (e as Error).message, variant: "destructive" }); }
@@ -86,11 +144,56 @@ export default function Reports() {
     return { subject: f.shortName, valor: result?.avg || 0 };
   });
 
-  // Sector breakdown
-  const sectorAvgs = getSectorAverages(effectiveCompany);
+  // Sector breakdown (filtered by selected form)
+  const sectorAvgs = [...new Set(pool.map(r => r.sector))].sort().map(sector => {
+    const sectorPool = pool.filter(r => r.sector === sector);
+    const sectionAvgs: Record<string, number> = {};
+    availableSectionsForPool.forEach(s => {
+      sectionAvgs[s.id] = getSectionAverageFromPool(s.id, sectorPool);
+    });
+    return { sector, count: sectorPool.length, sectionAvgs };
+  });
 
-  // Outliers
-  const outliers = getOutlierResponses(effectiveCompany).slice(0, 15);
+  // Outliers (filtered by selected form)
+  const outliers = (() => {
+    const threshold = 1.5;
+    const detected: { respondent: any; questionId: string; value: number; sectorAvg: number; deviation: number }[] = [];
+    const sectorGroups: Record<string, typeof pool> = {};
+
+    pool.forEach(r => {
+      if (!sectorGroups[r.sector]) sectorGroups[r.sector] = [];
+      sectorGroups[r.sector].push(r);
+    });
+
+    Object.values(sectorGroups).forEach((sectorRespondents) => {
+      if (sectorRespondents.length < 3) return;
+
+      availableQuestionsList.forEach(q => {
+        const answers = sectorRespondents.filter(r => r.answers[q.id] !== undefined).map(r => r.answers[q.id]);
+        if (answers.length < 3) return;
+
+        const mean = answers.reduce((a, b) => a + b, 0) / answers.length;
+        const stdDev = Math.sqrt(answers.reduce((acc, v) => acc + Math.pow(v - mean, 2), 0) / answers.length);
+        if (stdDev === 0) return;
+
+        sectorRespondents.forEach(r => {
+          if (r.answers[q.id] === undefined) return;
+          const deviation = Math.abs(r.answers[q.id] - mean) / stdDev;
+          if (deviation >= threshold) {
+            detected.push({
+              respondent: r,
+              questionId: q.id,
+              value: r.answers[q.id],
+              sectorAvg: Math.round(mean * 100) / 100,
+              deviation: Math.round(deviation * 100) / 100,
+            });
+          }
+        });
+      });
+    });
+
+    return detected.sort((a, b) => b.deviation - a.deviation).slice(0, 15);
+  })();
 
   // Critical companies (any factor with high risk)
   const criticalCompanies = companies.map(c => {
@@ -106,7 +209,6 @@ export default function Reports() {
   }).filter(c => c.highRiskCount > 0).sort((a, b) => b.highRiskCount - a.highRiskCount);
 
   const allSectors = [...new Set(respondents.filter(r => effectiveCompareIds.includes(r.companyId)).map(r => r.sector))].sort();
-  const availableQuestionsList = getAvailableQuestions();
 
   return (
     <DashboardLayout>
@@ -152,8 +254,8 @@ export default function Reports() {
             />
             
             <div className="flex gap-2 sm:ml-auto">
-              <button onClick={() => handleExport("PDF", () => exportCompanyPDF(effectiveCompany, exportData))} className="flex-1 sm:flex-none flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"><FileDown className="h-4 w-4" /> PDF</button>
-              <button onClick={() => handleExport("CSV", () => exportCompanyReport(effectiveCompany, exportData))} className="flex-1 sm:flex-none flex items-center justify-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"><Download className="h-4 w-4" /> CSV</button>
+              <button onClick={() => handleExport("PDF", () => exportCompanyPDF(effectiveCompany, individualExportData))} className="flex-1 sm:flex-none flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"><FileDown className="h-4 w-4" /> PDF</button>
+              <button onClick={() => handleExport("CSV", () => exportCompanyReport(effectiveCompany, individualExportData))} className="flex-1 sm:flex-none flex items-center justify-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"><Download className="h-4 w-4" /> CSV</button>
             </div>
           </div>
 
@@ -247,12 +349,12 @@ export default function Reports() {
           {sectorAvgs.length > 0 && (
             <div className="overflow-x-auto mb-5">
               <h4 className="text-xs font-semibold text-muted-foreground mb-2">Respostas por Setor</h4>
-              <table className="w-full text-sm"><thead><tr className="border-b border-border"><th className="px-4 py-2 text-left font-semibold text-muted-foreground">Setor</th><th className="px-4 py-2 text-center font-semibold text-muted-foreground">Resp.</th>{availableSections.map(s => <th key={s.id} className="px-4 py-2 text-center font-semibold text-muted-foreground">{s.shortName}</th>)}</tr></thead>
+              <table className="w-full text-sm"><thead><tr className="border-b border-border"><th className="px-4 py-2 text-left font-semibold text-muted-foreground">Setor</th><th className="px-4 py-2 text-center font-semibold text-muted-foreground">Resp.</th>{availableSectionsForPool.map(s => <th key={s.id} className="px-4 py-2 text-center font-semibold text-muted-foreground">{s.shortName}</th>)}</tr></thead>
                 <tbody>{sectorAvgs.map(sa => (
                   <tr key={sa.sector} className="border-b border-border/50">
                     <td className="px-4 py-2 font-medium text-foreground">{sa.sector}</td>
                     <td className="px-4 py-2 text-center text-muted-foreground">{sa.count}</td>
-                    {availableSections.map(s => {
+                    {availableSectionsForPool.map(s => {
                       const val = sa.sectionAvgs[s.id] || 0;
                       const scale = PROART_SCALES.find(sc => sc.id === s.id);
                       const scaleType = scale?.type === "positive" ? "positive" as const : "negative" as const;

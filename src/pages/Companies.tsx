@@ -47,16 +47,32 @@ export default function Companies() {
 
   // Group configs by CNPJ to build company list
   const companies: CompanyEntry[] = [];
-  const cnpjMap = new Map<string, { name: string; sector: string; employee_count: number | null; count: number }>();
+  const cnpjMap = new Map<string, { name: string; sector: string; employee_count: number | null; count: number; priority: 0 | 1 }>();
 
   configs.forEach((c: any) => {
     const cnpj = c.cnpj || "";
     if (!cnpj) return;
     const isPlaceholder = c.spreadsheet_id === "__placeholder__";
+    const priority: 0 | 1 = isPlaceholder ? 0 : 1;
+
     if (cnpjMap.has(cnpj)) {
-      if (!isPlaceholder) cnpjMap.get(cnpj)!.count++;
+      const current = cnpjMap.get(cnpj)!;
+      if (!isPlaceholder) current.count++;
+
+      if (priority > current.priority) {
+        current.name = c.company_name || current.name;
+        current.sector = c.sector || current.sector;
+        current.employee_count = c.employee_count || current.employee_count;
+        current.priority = priority;
+      }
     } else {
-      cnpjMap.set(cnpj, { name: c.company_name, sector: c.sector || "", employee_count: c.employee_count || null, count: isPlaceholder ? 0 : 1 });
+      cnpjMap.set(cnpj, {
+        name: c.company_name,
+        sector: c.sector || "",
+        employee_count: c.employee_count || null,
+        count: isPlaceholder ? 0 : 1,
+        priority,
+      });
     }
   });
 
@@ -99,13 +115,26 @@ export default function Companies() {
       if (sector !== undefined) updateData.sector = sector || null;
       if (employee_count !== undefined) updateData.employee_count = employee_count ? parseInt(employee_count) : null;
 
-      const { data, error } = await (supabase
-        .from("google_forms_config") as any)
-        .update(updateData)
-        .eq("cnpj", cnpj)
-        .select();
-      if (error) throw new Error(error.message || "Erro ao atualizar empresa");
-      if (!data || data.length === 0) throw new Error("Não foi possível atualizar. Verifique suas permissões.");
+      const targetConfigs = configs
+        .filter((c: any) => c.cnpj === cnpj)
+        .sort((a: any, b: any) => Number(a.spreadsheet_id === "__placeholder__") - Number(b.spreadsheet_id === "__placeholder__"));
+
+      const results = await Promise.all(
+        targetConfigs.map(async (config: any) => {
+          const { data, error } = await (supabase
+            .from("google_forms_config") as any)
+            .update(updateData)
+            .eq("id", config.id)
+            .select("id");
+          return { data, error };
+        }),
+      );
+
+      const successCount = results.filter((result) => !result.error && Array.isArray(result.data) && result.data.length > 0).length;
+      if (successCount === 0) {
+        const firstError = results.find((result) => result.error)?.error;
+        throw new Error(firstError?.message || "Não foi possível atualizar a empresa. Verifique as permissões desta conta.");
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["google-forms-config"] });
