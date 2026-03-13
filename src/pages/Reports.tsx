@@ -134,7 +134,7 @@ export default function Reports() {
           <h3 className="text-sm font-semibold text-card-foreground mb-4 flex items-center gap-2"><Building2 className="h-4 w-4 text-primary" /> Relatório Individual</h3>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-5">
             {!isCompanyUser ? (
-              <select value={effectiveCompany} onChange={e => { setSelectedCompany(e.target.value); setSelectedFormId(""); }} className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground w-full sm:w-auto">
+              <select value={effectiveCompany} onChange={e => setSelectedCompany(e.target.value)} className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground w-full sm:w-auto">
                 {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             ) : (
