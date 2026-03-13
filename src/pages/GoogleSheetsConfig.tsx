@@ -206,6 +206,11 @@ export default function GoogleSheetsConfig() {
                     </select>
                   </div>
                   <div className="space-y-1">
+                    <label className="text-xs font-medium text-foreground">Título do Formulário</label>
+                    <input value={formData.form_title} onChange={e => setFormData({ ...formData, form_title: e.target.value })} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary transition" placeholder="Ex: Pesquisa 2026 - Sede" />
+                    <p className="text-[10px] text-muted-foreground">Nome de identificação do formulário (exibido nos filtros).</p>
+                  </div>
+                  <div className="space-y-1">
                     <label className="text-xs font-medium text-foreground">ID da Planilha</label>
                     <input value={formData.spreadsheet_id} onChange={e => setFormData({ ...formData, spreadsheet_id: e.target.value })} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary transition" placeholder="ID do Google Sheets" />
                   </div>
