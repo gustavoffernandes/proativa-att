@@ -232,37 +232,40 @@ export default function GoogleSheetsConfig() {
           <div className="rounded-xl border border-border bg-card p-8 text-center"><Link2 className="h-10 w-10 text-muted-foreground mx-auto mb-3" /><p className="text-sm text-muted-foreground">Nenhum formulário configurado.</p></div>
         ) : (
           <div className="space-y-3">
-            {configs.map(config => (
-              <div key={config.id} className="rounded-xl border border-border bg-card p-5 shadow-card">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-sm font-semibold text-card-foreground truncate">{config.company_name}</h3>
-                      {config.is_active ? <span className="flex items-center gap-1 text-xs text-success"><CheckCircle2 className="h-3 w-3" /> Ativa</span> : <span className="flex items-center gap-1 text-xs text-muted-foreground"><XCircle className="h-3 w-3" /> Inativa</span>}
+            {configs.map((config) => {
+              const effectiveLastSyncAt = config.last_sync_at || lastSyncByConfig[config.id] || null;
+
+              return (
+                <div key={config.id} className="rounded-xl border border-border bg-card p-5 shadow-card">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-sm font-semibold text-card-foreground truncate">{config.company_name}</h3>
+                        {config.is_active ? <span className="flex items-center gap-1 text-xs text-success"><CheckCircle2 className="h-3 w-3" /> Ativa</span> : <span className="flex items-center gap-1 text-xs text-muted-foreground"><XCircle className="h-3 w-3" /> Inativa</span>}
+                      </div>
+                      {config.cnpj && <p className="text-xs text-muted-foreground">CNPJ: {formatCNPJ(config.cnpj)}</p>}
+                      <p className="text-xs text-muted-foreground truncate">Planilha: {config.spreadsheet_id}</p>
+                      <p className="text-xs text-muted-foreground truncate">Aba: {config.sheet_name}</p>
+                      {effectiveLastSyncAt ? (
+                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                          <Clock className="h-3 w-3" />
+                          Última sincronização: {new Date(effectiveLastSyncAt).toLocaleDateString("pt-BR")} às {new Date(effectiveLastSyncAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                          <Clock className="h-3 w-3" /> Ainda não sincronizado
+                        </p>
+                      )}
                     </div>
-                    {config.cnpj && <p className="text-xs text-muted-foreground">CNPJ: {formatCNPJ(config.cnpj)}</p>}
-                    <p className="text-xs text-muted-foreground truncate">Planilha: {config.spreadsheet_id}</p>
-                    <p className="text-xs text-muted-foreground truncate">Aba: {config.sheet_name}</p>
-                    {config.last_sync_at && (
-                      <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                        <Clock className="h-3 w-3" />
-                        Última sincronização: {new Date(config.last_sync_at).toLocaleDateString("pt-BR")} às {new Date(config.last_sync_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-                      </p>
-                    )}
-                    {!config.last_sync_at && (
-                      <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                        <Clock className="h-3 w-3" /> Ainda não sincronizado
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {config.form_url && <a href={config.form_url} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-border p-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"><ExternalLink className="h-4 w-4" /></a>}
-                    <button onClick={() => syncConfig.mutate(config.id)} disabled={syncConfig.isPending} className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60 transition-colors">{syncConfig.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />} Sincronizar</button>
-                    <button onClick={() => { if (confirm("Tem certeza?")) deleteConfig.mutate(config.id); }} className="rounded-lg border border-destructive/30 p-2 text-destructive hover:bg-destructive/10 transition-colors"><Trash2 className="h-4 w-4" /></button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {config.form_url && <a href={config.form_url} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-border p-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"><ExternalLink className="h-4 w-4" /></a>}
+                      <button onClick={() => syncConfig.mutate(config.id)} disabled={syncConfig.isPending} className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60 transition-colors">{syncConfig.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />} Sincronizar</button>
+                      <button onClick={() => { if (confirm("Tem certeza?")) deleteConfig.mutate(config.id); }} className="rounded-lg border border-destructive/30 p-2 text-destructive hover:bg-destructive/10 transition-colors"><Trash2 className="h-4 w-4" /></button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
