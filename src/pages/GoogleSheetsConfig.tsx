@@ -246,7 +246,7 @@ export default function GoogleSheetsConfig() {
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-sm font-semibold text-card-foreground truncate">{config.company_name}</h3>
+                        <h3 className="text-sm font-semibold text-card-foreground truncate">{(config as any).form_title || config.company_name}</h3>
                         {config.is_active ? <span className="flex items-center gap-1 text-xs text-success"><CheckCircle2 className="h-3 w-3" /> Ativa</span> : <span className="flex items-center gap-1 text-xs text-muted-foreground"><XCircle className="h-3 w-3" /> Inativa</span>}
                       </div>
                       {config.cnpj && <p className="text-xs text-muted-foreground">CNPJ: {formatCNPJ(config.cnpj)}</p>}

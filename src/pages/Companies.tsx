@@ -52,10 +52,11 @@ export default function Companies() {
   configs.forEach((c: any) => {
     const cnpj = c.cnpj || "";
     if (!cnpj) return;
+    const isPlaceholder = c.spreadsheet_id === "__placeholder__";
     if (cnpjMap.has(cnpj)) {
-      cnpjMap.get(cnpj)!.count++;
+      if (!isPlaceholder) cnpjMap.get(cnpj)!.count++;
     } else {
-      cnpjMap.set(cnpj, { name: c.company_name, sector: c.sector || "", employee_count: c.employee_count || null, count: 1 });
+      cnpjMap.set(cnpj, { name: c.company_name, sector: c.sector || "", employee_count: c.employee_count || null, count: isPlaceholder ? 0 : 1 });
     }
   });
 
