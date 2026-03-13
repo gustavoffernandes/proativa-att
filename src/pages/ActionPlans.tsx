@@ -2,6 +2,7 @@ import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useSurveyData } from "@/hooks/useSurveyData";
 import { useActionPlans } from "@/hooks/useActionPlans";
+import { FormFilter } from "@/components/dashboard/FormFilter";
 import {
   PROART_SCALES, ALL_FACTORS, classifyRisk, getRiskLabel, getRiskColor, getRiskBgColor,
   calculatePxS, getPRLevelLabel, getPRLevelColor, getPRLevelBgColor,
