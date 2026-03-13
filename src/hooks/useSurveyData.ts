@@ -136,22 +136,57 @@ export function useSurveyData() {
 
   const isLoading = loadingConfigs || loadingResponses;
 
-  // Filter configs and responses by company if user is company_user
-  const filteredConfigs = isCompanyUser && userCompanyId
-    ? configs.filter(c => c.id === userCompanyId)
-    : configs;
+  // Build a map from CNPJ (or config id) to grouped company info
+  // This deduplicates companies that have multiple forms
+  const cnpjToConfigIds = new Map<string, string[]>();
+  const cnpjToCompanyInfo = new Map<string, { name: string; sector: string; employees: number | null; cnpj: string }>();
 
-  const filteredRawResponses = isCompanyUser && userCompanyId
-    ? rawResponses.filter(r => r.config_id === userCompanyId)
-    : rawResponses;
+  configs.forEach((c: any) => {
+    const key = c.cnpj || c.id; // Use CNPJ as key, fallback to id if no CNPJ
+    if (!cnpjToConfigIds.has(key)) {
+      cnpjToConfigIds.set(key, []);
+      cnpjToCompanyInfo.set(key, {
+        name: c.company_name,
+        sector: c.sector || "Nao informado",
+        employees: c.employee_count || null,
+        cnpj: c.cnpj || "",
+      });
+    }
+    cnpjToConfigIds.get(key)!.push(c.id);
+  });
 
-  const companies: RealCompany[] = filteredConfigs.map((c, i) => ({
-    id: c.id,
-    name: c.company_name,
-    sector: (c as any).sector || "Nao informado",
-    employees: (c as any).employee_count || filteredRawResponses.filter(r => r.config_id === c.id).length,
-    color: COMPANY_COLORS[i % COMPANY_COLORS.length],
-  }));
+  // Map from config_id to company key (CNPJ or id)
+  const configIdToCompanyKey = new Map<string, string>();
+  cnpjToConfigIds.forEach((configIds, key) => {
+    configIds.forEach(configId => configIdToCompanyKey.set(configId, key));
+  });
+
+  // Filter by company if user is company_user
+  const userCompanyKey = userCompanyId ? configIdToCompanyKey.get(userCompanyId) || userCompanyId : null;
+
+  const filteredCompanyKeys = isCompanyUser && userCompanyKey
+    ? [userCompanyKey]
+    : Array.from(cnpjToConfigIds.keys());
+
+  const filteredConfigIds = new Set<string>();
+  filteredCompanyKeys.forEach(key => {
+    (cnpjToConfigIds.get(key) || []).forEach(id => filteredConfigIds.add(id));
+  });
+
+  const filteredRawResponses = rawResponses.filter(r => filteredConfigIds.has(r.config_id));
+
+  const companies: RealCompany[] = filteredCompanyKeys.map((key, i) => {
+    const info = cnpjToCompanyInfo.get(key)!;
+    const companyConfigIds = cnpjToConfigIds.get(key) || [];
+    const responseCount = filteredRawResponses.filter(r => companyConfigIds.includes(r.config_id)).length;
+    return {
+      id: key, // Use CNPJ as company id
+      name: info.name,
+      sector: info.sector,
+      employees: info.employees || responseCount,
+      color: COMPANY_COLORS[i % COMPANY_COLORS.length],
+    };
+  });
 
   const respondents: Respondent[] = filteredRawResponses.map(r => {
     const formattedAnswers: Record<string, number> = {};
