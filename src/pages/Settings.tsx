@@ -67,11 +67,19 @@ export default function Settings() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("google_forms_config")
-        .select("id, company_name")
+        .select("id, company_name, cnpj")
         .eq("is_active", true)
         .order("company_name");
       if (error) throw error;
-      return data;
+      // Deduplicate by CNPJ - keep first config id per CNPJ
+      const seen = new Map<string, { id: string; company_name: string }>();
+      (data || []).forEach((c: any) => {
+        const key = c.cnpj || c.id;
+        if (!seen.has(key)) {
+          seen.set(key, { id: c.id, company_name: c.company_name });
+        }
+      });
+      return Array.from(seen.values());
     },
     enabled: isAdmin,
   });
