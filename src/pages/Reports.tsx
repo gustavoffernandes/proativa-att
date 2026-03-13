@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useSurveyData } from "@/hooks/useSurveyData";
+import { FormFilter } from "@/components/dashboard/FormFilter";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { questions, sections } from "@/data/mockData";
@@ -32,8 +33,9 @@ function RiskBadge({ value, type }: { value: number; type: "positive" | "negativ
 export default function Reports() {
   const { isCompanyUser } = useAuth();
   const surveyData = useSurveyData();
-  const { isLoading, hasData, companies, respondents, getSectionAverage, getCompanyRespondents, getQuestionAverage, getAvailableSections, getAvailableQuestions, getAnswerDistribution, getOutlierResponses, getSectorAverages } = surveyData;
+  const { isLoading, hasData, companies, respondents, getSectionAverage, getCompanyRespondents, getQuestionAverage, getAvailableSections, getAvailableQuestions, getAnswerDistribution, getOutlierResponses, getSectorAverages, getFormConfigsForCompany } = surveyData;
   const [selectedCompany, setSelectedCompany] = useState<string>("");
+  const [selectedFormId, setSelectedFormId] = useState<string>("");
   
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [compareSector, setCompareSector] = useState<string>("");
@@ -44,7 +46,9 @@ export default function Reports() {
 
   const effectiveCompany = selectedCompany || companies[0]?.id || "";
   const effectiveCompareIds = compareIds.length > 0 ? compareIds : companies.map(c => c.id);
-  const pool = getCompanyRespondents(effectiveCompany);
+  const companyForms = getFormConfigsForCompany(effectiveCompany);
+  let pool = getCompanyRespondents(effectiveCompany);
+  if (selectedFormId) pool = pool.filter((r: any) => r.configId === selectedFormId);
   const toggleCompare = (id: string) => { const current = effectiveCompareIds; setCompareIds(current.includes(id) ? current.filter(x => x !== id) : [...current, id]); };
 
   const exportData = { companies, sections: availableSections.length > 0 ? availableSections : sections, questions, respondents, getCompanyRespondents, getSectionAverage, getQuestionAverage, getAnswerDistribution, getAvailableSections, getAvailableQuestions };
@@ -134,12 +138,18 @@ export default function Reports() {
           <h3 className="text-sm font-semibold text-card-foreground mb-4 flex items-center gap-2"><Building2 className="h-4 w-4 text-primary" /> Relatório Individual</h3>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-5">
             {!isCompanyUser ? (
-              <select value={effectiveCompany} onChange={e => setSelectedCompany(e.target.value)} className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground w-full sm:w-auto">
+              <select value={effectiveCompany} onChange={e => { setSelectedCompany(e.target.value); setSelectedFormId(""); }} className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground w-full sm:w-auto">
                 {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             ) : (
               <p className="text-sm font-medium text-foreground">{companies.find(c => c.id === effectiveCompany)?.name}</p>
             )}
+            
+            <FormFilter
+              forms={companyForms}
+              selectedFormId={selectedFormId}
+              onChange={setSelectedFormId}
+            />
             
             <div className="flex gap-2 sm:ml-auto">
               <button onClick={() => handleExport("PDF", () => exportCompanyPDF(effectiveCompany, exportData))} className="flex-1 sm:flex-none flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"><FileDown className="h-4 w-4" /> PDF</button>

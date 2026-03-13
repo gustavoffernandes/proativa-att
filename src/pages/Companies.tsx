@@ -99,11 +99,13 @@ export default function Companies() {
       if (sector !== undefined) updateData.sector = sector || null;
       if (employee_count !== undefined) updateData.employee_count = employee_count ? parseInt(employee_count) : null;
 
-      const { error } = await (supabase
+      const { data, error } = await (supabase
         .from("google_forms_config") as any)
         .update(updateData)
-        .eq("cnpj", cnpj);
-      if (error) throw error;
+        .eq("cnpj", cnpj)
+        .select();
+      if (error) throw new Error(error.message || "Erro ao atualizar empresa");
+      if (!data || data.length === 0) throw new Error("Não foi possível atualizar. Verifique suas permissões.");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["google-forms-config"] });
