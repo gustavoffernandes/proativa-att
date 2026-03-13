@@ -257,7 +257,7 @@ export default function Reports() {
             />
 
             <div className="flex gap-2 sm:ml-auto">
-              <button onClick={() => handleExport("PDF", () => exportCompanyPDF(effectiveCompany, individualExportData))} className="flex-1 sm:flex-none flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"><FileDown className="h-4 w-4" /> PDF</button>
+              <button onClick={() => handleExport("PDF", () => exportCompanyPDF(effectiveCompany, individualExportData, selectedFormName))} className="flex-1 sm:flex-none flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"><FileDown className="h-4 w-4" /> PDF</button>
               <button onClick={() => handleExport("CSV", () => exportCompanyReport(effectiveCompany, individualExportData))} className="flex-1 sm:flex-none flex items-center justify-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"><Download className="h-4 w-4" /> CSV</button>
             </div>
           </div>
