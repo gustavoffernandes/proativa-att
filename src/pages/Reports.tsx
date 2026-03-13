@@ -34,7 +34,7 @@ export default function Reports() {
   const surveyData = useSurveyData();
   const { isLoading, hasData, companies, respondents, getSectionAverage, getCompanyRespondents, getQuestionAverage, getAvailableSections, getAvailableQuestions, getAnswerDistribution, getOutlierResponses, getSectorAverages, getFormConfigsForCompany } = surveyData;
   const [selectedCompany, setSelectedCompany] = useState<string>("");
-  const [selectedFormId, setSelectedFormId] = useState<string>("");
+  
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [compareSector, setCompareSector] = useState<string>("");
   const availableSections = getAvailableSections();
