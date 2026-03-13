@@ -87,6 +87,7 @@ export default function GoogleSheetsConfig() {
       const { error } = await supabase.from("google_forms_config").insert([{
         company_name: companyName,
         cnpj: newConfig.company_cnpj,
+        form_title: newConfig.form_title || null,
         spreadsheet_id: newConfig.spreadsheet_id,
         sheet_name: newConfig.sheet_name,
         form_url: newConfig.form_url || null,
