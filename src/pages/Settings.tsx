@@ -1,19 +1,18 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Settings as SettingsIcon, User, Bell, Palette, Shield, Save, UserPlus, Loader2, Sun, Moon, Monitor } from "lucide-react";
+import { Settings as SettingsIcon, User, Palette, Save, UserPlus, Loader2, Sun, Moon, Monitor } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 
-type TabId = "perfil" | "usuarios" | "notificacoes" | "aparencia" | "geral";
+type TabId = "perfil" | "usuarios" | "aparencia" | "geral";
 type ThemeMode = "light" | "dark" | "system";
 
 const allTabs: { id: TabId; label: string; icon: React.ElementType; adminOnly?: boolean }[] = [
   { id: "perfil", label: "Perfil", icon: User },
   { id: "usuarios", label: "Usuários", icon: UserPlus, adminOnly: true },
-  { id: "notificacoes", label: "Notificações", icon: Bell },
   { id: "aparencia", label: "Aparência", icon: Palette },
   { id: "geral", label: "Geral", icon: SettingsIcon },
 ];
@@ -38,7 +37,6 @@ export default function Settings() {
   const tabs = allTabs.filter(t => !t.adminOnly || isAdmin);
   const [activeTab, setActiveTab] = useState<TabId>("perfil");
   const [profile, setProfile] = useState({ name: "Admin", email: user?.email ?? "", role: "Gestor SST", company: "PROATIVA Consultoria" });
-  const [notifications, setNotifications] = useState({ emailSync: true, emailReport: false, browserNotifications: true });
   const [newUserEmail, setNewUserEmail] = useState("");
   const [newUserPassword, setNewUserPassword] = useState("");
   const [newUserRole, setNewUserRole] = useState<"admin" | "user" | "company_user">("user");
@@ -48,8 +46,14 @@ export default function Settings() {
   const [fontSize, setFontSize] = useState<"normal" | "large">(
     (localStorage.getItem("proativa-fontsize") as "normal" | "large") || "normal"
   );
+  const isFirstRender = useRef(true);
 
   useEffect(() => {
+    // Skip applying theme on first render since main.tsx already applied it
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
     applyTheme(theme);
   }, [theme]);
 
@@ -155,18 +159,6 @@ export default function Settings() {
                 <button onClick={handleCreateUser} disabled={creatingUser} className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60 transition-colors">{creatingUser ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />} Criar Usuário</button>
               </div>
             )}
-            {activeTab === "notificacoes" && (
-              <div className="space-y-4 max-w-md">
-                <h3 className="text-lg font-semibold text-card-foreground">Notificações</h3>
-                {[{ key: "emailSync", label: "E-mail ao sincronizar dados" }, { key: "emailReport", label: "E-mail ao gerar relatório" }, { key: "browserNotifications", label: "Notificações do navegador" }].map(n => (
-                  <label key={n.key} className="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" checked={notifications[n.key as keyof typeof notifications]} onChange={e => setNotifications({ ...notifications, [n.key]: e.target.checked })}
-                      className="h-4 w-4 rounded border-border text-primary focus:ring-primary" />
-                    <span className="text-sm text-foreground">{n.label}</span>
-                  </label>
-                ))}
-              </div>
-            )}
             {activeTab === "aparencia" && (
               <div className="space-y-6 max-w-lg">
                 <h3 className="text-lg font-semibold text-card-foreground">Aparência</h3>
@@ -219,19 +211,6 @@ export default function Settings() {
                       <p className="text-xs text-muted-foreground mt-1">Grande</p>
                     </button>
                   </div>
-                </div>
-
-                {/* Accent color preview */}
-                <div className="space-y-3">
-                  <label className="text-sm font-medium text-foreground">Cor de Destaque</label>
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-primary" />
-                    <div className="h-10 w-10 rounded-lg bg-accent" />
-                    <div className="h-10 w-10 rounded-lg bg-success" />
-                    <div className="h-10 w-10 rounded-lg bg-warning" />
-                    <div className="h-10 w-10 rounded-lg bg-destructive" />
-                  </div>
-                  <p className="text-xs text-muted-foreground">As cores do sistema são configuradas pelo design system da PROATIVA.</p>
                 </div>
               </div>
             )}

@@ -99,7 +99,12 @@ export default function GoogleSheetsConfig() {
       if (error) throw error;
       return data;
     },
-    onSuccess: (data) => {
+    onSuccess: async (data, configId) => {
+      // Also update last_sync_at from client side as fallback
+      await supabase
+        .from("google_forms_config")
+        .update({ last_sync_at: new Date().toISOString() } as any)
+        .eq("id", configId);
       queryClient.invalidateQueries({ queryKey: ["survey-responses"] });
       queryClient.invalidateQueries({ queryKey: ["google-forms-config"] });
       queryClient.invalidateQueries({ queryKey: ["google-forms-config-all"] });
