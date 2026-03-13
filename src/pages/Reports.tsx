@@ -48,7 +48,6 @@ export default function Reports() {
   let pool = getCompanyRespondents(effectiveCompany);
   if (selectedFormId) pool = pool.filter(r => r.configId === selectedFormId);
   const toggleCompare = (id: string) => { const current = effectiveCompareIds; setCompareIds(current.includes(id) ? current.filter(x => x !== id) : [...current, id]); };
-  const toggleCompare = (id: string) => { const current = effectiveCompareIds; setCompareIds(current.includes(id) ? current.filter(x => x !== id) : [...current, id]); };
 
   const exportData = { companies, sections: availableSections.length > 0 ? availableSections : sections, questions, respondents, getCompanyRespondents, getSectionAverage, getQuestionAverage, getAnswerDistribution, getAvailableSections, getAvailableQuestions };
   const handleExport = (type: string, fn: () => void) => {
