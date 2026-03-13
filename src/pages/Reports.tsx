@@ -241,7 +241,7 @@ export default function Reports() {
         {/* Relatório Individual */}
         <div className="rounded-xl border border-border bg-card p-5 shadow-card">
           <h3 className="text-sm font-semibold text-card-foreground mb-4 flex items-center gap-2"><Building2 className="h-4 w-4 text-primary" /> Relatório Individual</h3>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-5">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-3">
             {!isCompanyUser ? (
               <select value={effectiveCompany} onChange={e => { setSelectedCompany(e.target.value); setSelectedFormId(""); }} className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground w-full sm:w-auto">
                 {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -249,17 +249,22 @@ export default function Reports() {
             ) : (
               <p className="text-sm font-medium text-foreground">{companies.find(c => c.id === effectiveCompany)?.name}</p>
             )}
-            
+
             <FormFilter
               forms={companyForms}
               selectedFormId={selectedFormId}
               onChange={setSelectedFormId}
             />
-            
+
             <div className="flex gap-2 sm:ml-auto">
               <button onClick={() => handleExport("PDF", () => exportCompanyPDF(effectiveCompany, individualExportData))} className="flex-1 sm:flex-none flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"><FileDown className="h-4 w-4" /> PDF</button>
               <button onClick={() => handleExport("CSV", () => exportCompanyReport(effectiveCompany, individualExportData))} className="flex-1 sm:flex-none flex items-center justify-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"><Download className="h-4 w-4" /> CSV</button>
             </div>
+          </div>
+
+          <div className="mb-5 rounded-lg border border-border bg-muted/40 px-3 py-2">
+            <p className="text-[11px] font-medium text-muted-foreground">Formulário selecionado</p>
+            <p className="text-sm font-semibold text-foreground">{selectedFormName}</p>
           </div>
 
           {/* KPIs + P×S */}
