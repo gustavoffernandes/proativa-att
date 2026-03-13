@@ -29,7 +29,7 @@ function formatCNPJ(value: string): string {
 export default function GoogleSheetsConfig() {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({ company_cnpj: "", spreadsheet_id: "", sheet_name: "Form Responses 1", form_url: "" });
+  const [formData, setFormData] = useState({ company_cnpj: "", form_title: "", spreadsheet_id: "", sheet_name: "Form Responses 1", form_url: "" });
 
   // Fetch all configs (including placeholders for company list)
   const { data: allConfigs = [], isLoading: loadingAll } = useQuery({
