@@ -99,7 +99,7 @@ function getClassification(value: number, type: "positive" | "negative" = "posit
   return { label: "Risco Alto", color: COLORS.danger };
 }
 
-export function exportCompanyPDF(companyId: string, data: PDFExportData) {
+export function exportCompanyPDF(companyId: string, data: PDFExportData, formName?: string) {
   const company = data.companies.find(c => c.id === companyId);
   if (!company) return;
 
