@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { QuestionChart } from "@/components/dashboard/QuestionChart";
+import { FormFilter } from "@/components/dashboard/FormFilter";
 import { useSurveyData } from "@/hooks/useSurveyData";
 import { useAuth } from "@/contexts/AuthContext";
 import { questions } from "@/data/mockData";
@@ -17,17 +18,24 @@ export default function SurveyAnalysis() {
   const { isCompanyUser } = useAuth();
   const [activeSection, setActiveSection] = useState("contexto");
   const [selectedCompany, setSelectedCompany] = useState<string | undefined>(undefined);
+  const [selectedFormId, setSelectedFormId] = useState<string>("");
   const [sectorFilter, setSectorFilter] = useState<string>("");
-  const { isLoading, hasData, companies, respondents, getAvailableSections, getAvailableQuestions, getAnswerDistribution, getQuestionAverage } = useSurveyData();
+  const { isLoading, hasData, companies, respondents, getAvailableSections, getAvailableQuestions, getAnswerDistribution, getQuestionAverage, getFormConfigsForCompany } = useSurveyData();
 
   const availableSections = getAvailableSections();
   const availableQuestions = getAvailableQuestions();
   const sectionQuestions = availableQuestions.filter((q) => q.section === activeSection);
 
-  // For company_user, auto-select their company
   const effectiveCompany = isCompanyUser && companies.length === 1 ? companies[0].id : selectedCompany;
 
-  const companyRespondents = effectiveCompany ? respondents.filter(r => r.companyId === effectiveCompany) : respondents;
+  // Forms for the selected company
+  const companyForms = effectiveCompany ? getFormConfigsForCompany(effectiveCompany) : [];
+
+  // Filter respondents by company, form, and sector
+  let companyRespondents = effectiveCompany ? respondents.filter(r => r.companyId === effectiveCompany) : respondents;
+  if (selectedFormId) {
+    companyRespondents = companyRespondents.filter(r => (r as any).configId === selectedFormId);
+  }
   const availableSectors = [...new Set(companyRespondents.map(r => r.sector))].sort();
   const filteredRespondents = sectorFilter ? companyRespondents.filter(r => r.sector === sectorFilter) : companyRespondents;
 
@@ -71,12 +79,13 @@ export default function SurveyAnalysis() {
             ))}
           </div>
           {!isCompanyUser && (
-            <select value={selectedCompany || ""} onChange={(e) => { setSelectedCompany(e.target.value || undefined); setSectorFilter(""); }}
+            <select value={selectedCompany || ""} onChange={(e) => { setSelectedCompany(e.target.value || undefined); setSectorFilter(""); setSelectedFormId(""); }}
               className="rounded-lg border border-border bg-card px-3 py-2 text-sm w-full sm:w-auto">
               <option value="">Todas as empresas</option>
               {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           )}
+          <FormFilter forms={companyForms} selectedFormId={selectedFormId} onChange={(id) => { setSelectedFormId(id); setSectorFilter(""); }} />
           <select value={sectorFilter} onChange={(e) => setSectorFilter(e.target.value)}
             className="rounded-lg border border-border bg-card px-3 py-2 text-sm w-full sm:w-auto">
             <option value="">Todos os setores</option>
@@ -100,7 +109,7 @@ export default function SurveyAnalysis() {
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {sectionQuestions.map((q) => (
-            <QuestionChart key={q.id} questionId={q.id} questionText={`${q.number}. ${q.text}`} companyId={effectiveCompany} getAnswerDistribution={sectorFilter ? customDistribution : getAnswerDistribution} />
+            <QuestionChart key={q.id} questionId={q.id} questionText={`${q.number}. ${q.text}`} companyId={effectiveCompany} getAnswerDistribution={sectorFilter || selectedFormId ? customDistribution : getAnswerDistribution} />
           ))}
         </div>
         {sectionQuestions.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">Nenhuma pergunta com dados nesta seção.</p>}

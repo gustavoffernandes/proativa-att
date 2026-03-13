@@ -3,6 +3,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { HeatmapTable } from "@/components/dashboard/HeatmapTable";
 import { MultiSelectCompanies } from "@/components/dashboard/MultiSelectCompanies";
 import { DateRangeFilter } from "@/components/dashboard/DateRangeFilter";
+import { FormFilter } from "@/components/dashboard/FormFilter";
 import { useSurveyData } from "@/hooks/useSurveyData";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
@@ -12,21 +13,33 @@ export default function Heatmap() {
   const { isCompanyUser } = useAuth();
   const [activeSection, setActiveSection] = useState("contexto");
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
+  const [selectedFormId, setSelectedFormId] = useState<string>("");
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
-  const { isLoading, hasData, companies, respondents, getAvailableSections, getAvailableQuestions, getQuestionAverage } = useSurveyData();
+  const { isLoading, hasData, companies, respondents, formConfigs, getAvailableSections, getAvailableQuestions, getQuestionAverage } = useSurveyData();
   const availableSections = getAvailableSections();
+
+  // Forms for selected companies (or all)
+  const relevantForms = selectedCompanies.length === 1
+    ? formConfigs.filter(f => f.companyKey === selectedCompanies[0])
+    : selectedCompanies.length === 0
+      ? formConfigs
+      : [];
 
   if (isLoading) return <DashboardLayout><div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></DashboardLayout>;
   if (!hasData) return <DashboardLayout><div className="flex flex-col items-center justify-center h-64 text-center"><p className="text-sm text-muted-foreground">Nenhum dado disponível.</p></div></DashboardLayout>;
 
-  const filteredRespondents = respondents.filter(r => {
+  let filteredRespondents = respondents.filter(r => {
     if (!r.responseTimestamp) return !startDate && !endDate;
     const ts = new Date(r.responseTimestamp);
     if (startDate && ts < startDate) return false;
     if (endDate) { const end = new Date(endDate); end.setHours(23, 59, 59, 999); if (ts > end) return false; }
     return true;
   });
+
+  if (selectedFormId) {
+    filteredRespondents = filteredRespondents.filter(r => (r as any).configId === selectedFormId);
+  }
 
   const effectiveCompanies = selectedCompanies.length > 0 ? companies.filter(c => selectedCompanies.includes(c.id)) : companies;
 
@@ -55,7 +68,8 @@ export default function Heatmap() {
               </button>
             ))}
           </div>
-          {!isCompanyUser && <MultiSelectCompanies companies={companies} selected={selectedCompanies} onChange={setSelectedCompanies} />}
+          {!isCompanyUser && <MultiSelectCompanies companies={companies} selected={selectedCompanies} onChange={(ids) => { setSelectedCompanies(ids); setSelectedFormId(""); }} />}
+          <FormFilter forms={relevantForms} selectedFormId={selectedFormId} onChange={setSelectedFormId} />
           <DateRangeFilter startDate={startDate} endDate={endDate} onStartChange={setStartDate} onEndChange={setEndDate} />
         </div>
         <HeatmapTable sectionId={activeSection} companies={effectiveCompanies} getQuestionAverage={customGetQuestionAverage} getAvailableQuestions={getAvailableQuestions} />
